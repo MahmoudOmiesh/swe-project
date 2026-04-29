@@ -19,7 +19,10 @@ export default function Auth() {
   const [mode, setMode] = useState<"sign-in" | "sign-up">("sign-in");
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center gap-4">
+    <div
+      className="flex min-h-screen flex-col items-center justify-center gap-4"
+      style={{ background: "oklch(0.18 0.01 60)" }}
+    >
       {mode === "sign-in" ? <SignInForm /> : <SignUpForm />}
 
       <p className="text-muted-foreground text-sm">

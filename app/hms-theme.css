@@ -1,0 +1,355 @@
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=DM+Sans:wght@300;400;500&display=swap');
+
+/* Design 1 exact tokens — these are hardcoded, not theme-dependent */
+:root {
+  --d1-gold:        #B8965A;
+  --d1-gold-light:  #D4B07A;
+  --d1-gold-pale:   #F5EDD8;
+  --d1-dark:        #1A1612;
+  --d1-dark2:       #2C2520;
+  --d1-dark3:       #3D3530;
+  --d1-cream:       #FAF7F2;
+  --d1-cream2:      #F0EBE0;
+  --d1-text:        #1A1612;
+  --d1-text2:       #6B5E4E;
+  --d1-text3:       #9C8B78;
+  --d1-border:      rgba(184,150,90,0.25);
+  --d1-border2:     rgba(184,150,90,0.15);
+
+  /* status colors */
+  --d1-green:       #3B6D11;
+  --d1-green-bg:    #EAF3DE;
+  --d1-green-bd:    #97C459;
+  --d1-blue:        #185FA5;
+  --d1-blue-bg:     #E6F1FB;
+  --d1-blue-bd:     #85B7EB;
+  --d1-red:         #A32D2D;
+  --d1-red-bg:      #FCEBEB;
+  --d1-red-bd:      #F09595;
+  --d1-amber:       #7A5018;
+  --d1-amber-bg:    #F5EDD8;
+  --d1-amber-bd:    #D4B07A;
+}
+
+.font-display { font-family: 'Playfair Display', serif; }
+.font-body    { font-family: 'DM Sans', sans-serif; }
+
+/* force light surface on the HMS shell — overrides dark mode */
+.hms-shell {
+  background: var(--d1-cream) !important;
+  color: var(--d1-text) !important;
+}
+.hms-sidebar {
+  background: var(--d1-dark) !important;
+}
+.hms-surface {
+  background: var(--d1-cream2) !important;
+  border: 0.5px solid var(--d1-border2) !important;
+  color: var(--d1-text) !important;
+}
+.hms-inset {
+  background: var(--d1-cream) !important;
+  border: 0.5px solid var(--d1-border2) !important;
+}
+.hms-topbar {
+  background: var(--d1-cream) !important;
+  border-bottom: 0.5px solid var(--d1-border2) !important;
+}
+
+.hms-page-header {
+  display: flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: space-between;
+  padding: 13px 20px;
+}
+
+.hms-page-title {
+  font-size: 17px;
+  color: var(--d1-text);
+}
+
+.hms-date-chip {
+  font-size: 11px;
+  color: var(--d1-text3);
+  padding: 4px 10px;
+  border: 0.5px solid var(--d1-border);
+  border-radius: 20px;
+}
+
+.hms-page-main {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding: 18px;
+}
+
+.hms-page-caption {
+  font-size: 9px;
+  color: var(--d1-text3);
+  padding: 0 2px;
+}
+
+.hms-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 9px;
+}
+
+.hms-main-grid {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: 10px;
+}
+
+.hms-stack-col {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.hms-emphasis {
+  color: var(--d1-gold);
+}
+
+.hms-panel {
+  border-radius: 10px;
+  padding: 13px;
+}
+
+.hms-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.hms-panel-title {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--d1-text);
+}
+
+.hms-panel-meta {
+  font-size: 10px;
+  color: var(--d1-text3);
+}
+
+.hms-link-button {
+  font-size: 10px;
+  color: var(--d1-gold);
+  text-decoration: none;
+  background: transparent;
+  border: 0;
+  cursor: pointer;
+}
+
+.hms-link-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.hms-stat-card {
+  border-radius: 10px;
+  padding: 11px 13px;
+}
+
+.hms-stat-label {
+  font-size: 9px;
+  color: var(--d1-text3);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 4px;
+}
+
+.hms-stat-value {
+  font-size: 22px;
+  color: var(--d1-text);
+  line-height: 1;
+}
+
+.hms-stat-sub {
+  font-size: 10px;
+  color: var(--d1-text3);
+  margin-top: 3px;
+}
+
+.hms-room-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  gap: 4px;
+}
+
+.hms-room-cell {
+  aspect-ratio: 1;
+  border-radius: 5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  border-width: 0.5px;
+  border-style: solid;
+}
+
+.hms-legend {
+  display: flex;
+  gap: 10px;
+  margin-top: 7px;
+  flex-wrap: wrap;
+}
+
+.hms-legend-item {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.hms-legend-swatch {
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+}
+
+.hms-legend-text {
+  font-size: 9px;
+  color: var(--d1-text3);
+}
+
+.hms-guest-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hms-guest-item {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 10px;
+  border-radius: 7px;
+  cursor: pointer;
+  text-align: left;
+}
+
+.hms-guest-avatar {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 500;
+  flex-shrink: 0;
+}
+
+.hms-guest-content {
+  flex: 1;
+  min-width: 0;
+}
+
+.hms-guest-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.hms-guest-name {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--d1-text);
+}
+
+.hms-guest-note {
+  font-size: 8px;
+  background: var(--d1-amber-bg);
+  color: var(--d1-amber);
+  padding: 1px 5px;
+  border-radius: 10px;
+}
+
+.hms-guest-meta {
+  font-size: 9px;
+  color: var(--d1-text3);
+  margin-top: 1px;
+}
+
+.hms-guest-status {
+  font-size: 9px;
+  padding: 2px 7px;
+  border-radius: 20px;
+}
+
+.hms-bars-row {
+  display: flex;
+  align-items: flex-end;
+  gap: 3px;
+  height: 56px;
+}
+
+.hms-bar {
+  flex: 1;
+  border-radius: 3px 3px 0 0;
+}
+
+.hms-days-row {
+  display: flex;
+  gap: 3px;
+  margin-top: 3px;
+}
+
+.hms-day-label {
+  flex: 1;
+  text-align: center;
+  font-size: 8px;
+}
+
+.hms-notifications-list {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.hms-notification-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 7px;
+  padding: 7px 9px;
+  border-radius: 7px;
+}
+
+.hms-notification-icon {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 8px;
+  font-weight: 700;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.hms-notification-message {
+  font-size: 10px;
+  color: var(--d1-text2);
+  line-height: 1.4;
+}
+
+.hms-notification-time {
+  font-size: 9px;
+  color: var(--d1-text3);
+  margin-top: 1px;
+}
+
+.hms-empty-state {
+  font-size: 10px;
+  color: var(--d1-text3);
+  padding: 8px 2px;
+}
