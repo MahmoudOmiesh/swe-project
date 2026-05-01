@@ -10,7 +10,7 @@ export async function loader({ request }: Route.LoaderArgs) {
     headers: request.headers,
   });
 
-  if (session?.user?.role !== ROLES.MANAGER) {
+  if (session?.user?.role !== ROLES.RECEPTIONIST) {
     throw redirect("/");
   }
 
@@ -22,7 +22,7 @@ export default function ManagerLayout() {
 
   return (
     <div className="flex h-screen overflow-hidden font-body" style={{ background: "oklch(0.13 0.01 60)" }}>
-      <Sidebar user={user as unknown as User} role="manager" />
+      <Sidebar user={user as unknown as User} role="receptionist" />
       <Outlet />
     </div>
   );
