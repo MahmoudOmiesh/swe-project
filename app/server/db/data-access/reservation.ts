@@ -1,4 +1,5 @@
 import { eq, and, or, not, lt, gt, gte, count, isNull } from "drizzle-orm";
+import { parseCalendarDateUtc, todayUtc, addDaysUtc } from "@/lib/calendar-date";
 import { db } from "@/server/db";
 import {
   reservations,
@@ -65,15 +66,17 @@ export async function getBookingById(id: number) {
 }
 
 /** Get rooms available for a given date range (no overlapping non-cancelled reservations). */
-export async function getAvailableRooms(checkIn: Date, checkOut: Date) {
+export async function getAvailableRooms(checkIn: string, checkOut: string) {
+  const rangeStart = parseCalendarDateUtc(checkIn);
+  const rangeEnd = parseCalendarDateUtc(checkOut);
   const overlapping = await db
     .select({ roomId: reservations.roomId })
     .from(reservations)
     .where(
       and(
         not(eq(reservations.status, "cancelled")),
-        lt(reservations.checkInAt, checkOut),
-        gt(reservations.checkOutAt, checkIn),
+        lt(reservations.checkInAt, rangeEnd),
+        gt(reservations.checkOutAt, rangeStart),
       ),
     );
 
@@ -134,8 +137,8 @@ export async function createBooking(input: {
   };
   roomId: number;
   numberOfGuests: number;
-  checkIn: Date;
-  checkOut: Date;
+  checkIn: string;
+  checkOut: string;
   serviceIds?: number[];
 }) {
   // 1. Create guest record
@@ -158,8 +161,8 @@ export async function createBooking(input: {
       guestId: guest.id,
       roomId: input.roomId,
       numberOfGuests: input.numberOfGuests,
-      checkInAt: input.checkIn,
-      checkOutAt: input.checkOut,
+      checkInAt: parseCalendarDateUtc(input.checkIn),
+      checkOutAt: parseCalendarDateUtc(input.checkOut),
       status: "new",
     })
     .returning();
@@ -258,8 +261,8 @@ export async function updateBooking(
     };
     roomId: number;
     numberOfGuests: number;
-    checkIn: Date;
-    checkOut: Date;
+    checkIn: string;
+    checkOut: string;
     serviceIds?: number[];
   },
 ) {
@@ -288,8 +291,8 @@ export async function updateBooking(
     .set({
       roomId: input.roomId,
       numberOfGuests: input.numberOfGuests,
-      checkInAt: input.checkIn,
-      checkOutAt: input.checkOut,
+      checkInAt: parseCalendarDateUtc(input.checkIn),
+      checkOutAt: parseCalendarDateUtc(input.checkOut),
     })
     .where(eq(reservations.id, id))
     .returning();
@@ -322,10 +325,8 @@ export async function addService(reservationId: number, serviceId: number) {
 
 /** List today's arrivals — reservations with status "new" whose check-in date is today. */
 export async function getTodayArrivals() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = todayUtc();
+  const tomorrow = addDaysUtc(today, 1);
 
   return db.query.reservations.findMany({
     where: and(
@@ -383,10 +384,8 @@ export async function checkInReservation(
 
 /** List today's departures — checked-in or checked-out reservations whose check-out date is today. */
 export async function getTodayDepartures() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = todayUtc();
+  const tomorrow = addDaysUtc(today, 1);
 
   return db.query.reservations.findMany({
     where: and(
@@ -410,14 +409,14 @@ export async function getTodayDepartures() {
   });
 }
 
-/** Late checkouts — checked-in reservations whose check-out time has already passed. */
+/** Late checkouts — checked-in reservations whose check-out date has already passed. */
 export async function getLateCheckouts() {
-  const now = new Date();
+  const today = todayUtc();
 
   return db.query.reservations.findMany({
     where: and(
       eq(reservations.status, "checked-in"),
-      lt(reservations.checkOutAt, now),
+      lt(reservations.checkOutAt, today),
     ),
     with: {
       room: true,
@@ -447,12 +446,9 @@ export async function listBills() {
 
 /** Dashboard KPI stats. */
 export async function getDashboardStats() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  const today = todayUtc();
+  const tomorrow = addDaysUtc(today, 1);
+  const weekAgo = addDaysUtc(today, -7);
 
   // All rooms
   const allRooms = await db.select().from(rooms);
@@ -494,10 +490,8 @@ export async function getDashboardStats() {
 
 /** Today's guests for the dashboard — check-ins, staying, check-outs. */
 export async function getDashboardGuests() {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const tomorrow = new Date(today);
-  tomorrow.setDate(tomorrow.getDate() + 1);
+  const today = todayUtc();
+  const tomorrow = addDaysUtc(today, 1);
 
   const arrivals = await db.query.reservations.findMany({
     where: and(
@@ -593,12 +587,8 @@ export async function getWeeklyOccupancy() {
   const now = new Date();
   const dayOfWeek = now.getDay();
 
-  const weekStart = new Date(now);
-  weekStart.setDate(now.getDate() - dayOfWeek);
-  weekStart.setHours(0, 0, 0, 0);
-
-  const weekEnd = new Date(weekStart);
-  weekEnd.setDate(weekStart.getDate() + 7);
+  const weekStart = addDaysUtc(todayUtc(), -dayOfWeek);
+  const weekEnd = addDaysUtc(weekStart, 7);
 
   const totalRows = await db.select({ count: count() }).from(rooms);
   const totalRooms = totalRows[0]?.count ?? 1;
@@ -614,10 +604,8 @@ export async function getWeeklyOccupancy() {
 
   const labels = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   return labels.map((label, i) => {
-    const dayStart = new Date(weekStart);
-    dayStart.setDate(weekStart.getDate() + i);
-    const dayEnd = new Date(dayStart);
-    dayEnd.setDate(dayStart.getDate() + 1);
+    const dayStart = addDaysUtc(weekStart, i);
+    const dayEnd = addDaysUtc(dayStart, 1);
 
     const occupied = overlapping.filter(
       (r) => r.checkInAt < dayEnd && r.checkOutAt > dayStart,
@@ -633,8 +621,7 @@ export async function getWeeklyOccupancy() {
 
 /** Billing stats: revenue this week, paid count, pending (checked-in without bill) count. */
 export async function getBillingStats() {
-  const weekAgo = new Date();
-  weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekAgo = addDaysUtc(todayUtc(), -7);
 
   const allBills = await db.select().from(bills);
 

@@ -123,8 +123,8 @@ function BookingForm({ onClose, booking }: BookingFormProps) {
 
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
     ...trpc.hotel.bookings.availableRooms.queryOptions({
-      checkIn: checkIn ?? new Date(),
-      checkOut: checkOut ?? new Date(),
+      checkIn: format(checkIn ?? new Date(), "yyyy-MM-dd"),
+      checkOut: format(checkOut ?? new Date(), "yyyy-MM-dd"),
     }),
     enabled: datesValid,
   });
@@ -167,8 +167,8 @@ function BookingForm({ onClose, booking }: BookingFormProps) {
       },
       roomId: Number(data.roomId),
       numberOfGuests: data.numberOfGuests,
-      checkIn: data.checkIn,
-      checkOut: data.checkOut,
+      checkIn: format(data.checkIn, "yyyy-MM-dd"),
+      checkOut: format(data.checkOut, "yyyy-MM-dd"),
       serviceIds: data.services.map(Number),
     };
 

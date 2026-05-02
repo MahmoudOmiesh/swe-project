@@ -3,6 +3,7 @@ import {
   pgTable,
   integer,
   timestamp,
+  date,
   pgEnum,
 } from "drizzle-orm/pg-core";
 import { guests } from "./guests";
@@ -27,8 +28,8 @@ export const reservations = pgTable("reservations", {
     .references(() => rooms.id, { onDelete: "restrict" }),
 
   numberOfGuests: integer("number_of_guests").notNull(),
-  checkInAt: timestamp("check_in_date").notNull(),
-  checkOutAt: timestamp("check_out_date").notNull(),
+  checkInAt: date("check_in_date", { mode: "date" }).notNull(),
+  checkOutAt: date("check_out_date", { mode: "date" }).notNull(),
 
   status: reservationStatus("status").notNull().default("new"),
 

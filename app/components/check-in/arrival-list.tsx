@@ -8,7 +8,7 @@ export interface ArrivalListItem {
   avatarColor: string;
   roomLabel: string;
   bookingId: string;
-  time: string;
+  date: string;
 }
 
 interface ArrivalListProps {
@@ -73,7 +73,7 @@ export function ArrivalList({ title, meta, items, selectedId, onSelect }: Arriva
                 </div>
 
                 <div className="text-[11px] font-medium" style={{ color: colors.gold }}>
-                  {item.time}
+                  {item.date}
                 </div>
               </button>
             );

@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "@/server/api";
+import { calendarDateStringSchema } from "@/lib/calendar-date";
 import {
   listBookings,
   getBookingById,
@@ -183,8 +184,8 @@ export const bookingsRouter = router({
   availableRooms: protectedProcedure
     .input(
       z.object({
-        checkIn: z.coerce.date(),
-        checkOut: z.coerce.date(),
+        checkIn: calendarDateStringSchema,
+        checkOut: calendarDateStringSchema,
       }),
     )
     .query(async ({ input }) => {
@@ -218,8 +219,8 @@ export const bookingsRouter = router({
         }),
         roomId: z.number(),
         numberOfGuests: z.number().min(1),
-        checkIn: z.coerce.date(),
-        checkOut: z.coerce.date(),
+        checkIn: calendarDateStringSchema,
+        checkOut: calendarDateStringSchema,
         serviceIds: z.array(z.number()).optional(),
       }),
     )
@@ -251,8 +252,8 @@ export const bookingsRouter = router({
         }),
         roomId: z.number(),
         numberOfGuests: z.number().min(1),
-        checkIn: z.coerce.date(),
-        checkOut: z.coerce.date(),
+        checkIn: calendarDateStringSchema,
+        checkOut: calendarDateStringSchema,
         serviceIds: z.array(z.number()).optional(),
       }),
     )
@@ -339,11 +340,7 @@ export const bookingsRouter = router({
         avatarColor: avatar.text,
         roomLabel: `Room ${row.room.number} · ${capitalize(row.room.type)}`,
         bookingId: `#${row.id}`,
-        time: row.checkInAt.toLocaleTimeString("en-GB", {
-          hour: "2-digit",
-          minute: "2-digit",
-          hour12: false,
-        }),
+        date: fmtDate(row.checkInAt),
         // Guest details
         nationalId: row.guest.nationalityId,
         phone: row.guest.phone,
@@ -446,7 +443,7 @@ export const bookingsRouter = router({
     const rows = await getLateCheckouts();
     return rows.map((row) => ({
       id: row.id,
-      message: `Room ${row.room.number} — expected ${row.checkOutAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}, still occupied. Extra charge may apply.`,
+      message: `Room ${row.room.number} — expected checkout ${fmtDate(row.checkOutAt)}, still occupied. Extra charge may apply.`,
     }));
   }),
 
