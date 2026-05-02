@@ -9,7 +9,8 @@ import {
   checkOutBooking,
   getAvailableRooms,
   getBookingStats,
-  addActivity,
+  getAvailableServices,
+  addService,
 } from "@/server/db/data-access/reservation";
 
 
@@ -64,7 +65,7 @@ function mapBooking(row: Awaited<ReturnType<typeof listBookings>>[number]) {
       initials: initials(row.guest.firstName, row.guest.lastName),
       avatarBg: avatar.bg,
       avatarColor: avatar.text,
-      nationality: row.guest.nationality,
+      nationality: "",
       nationalId: row.guest.nationalityId,
       phone: row.guest.phone ?? "",
       numGuests: row.numberOfGuests,
@@ -77,9 +78,9 @@ function mapBooking(row: Awaited<ReturnType<typeof listBookings>>[number]) {
     checkOut: fmtDate(row.checkOutAt),
     nights,
     status: row.status,
-    activities: row.activities.map((a) => ({
-      activity: a.activity,
-      price: a.price,
+    services: row.services.map((rs) => ({
+      activity: rs.service.name,
+      price: rs.service.price,
     })),
   };
 }
@@ -140,21 +141,29 @@ export const bookingsRouter = router({
       }));
     }),
 
-  /** Create a new booking (guest + reservation). */
+  /** All predefined services. */
+  availableServices: receptionistProcedure.query(async () => {
+    const rows = await getAvailableServices();
+    return rows.map((s) => ({ id: s.id, name: s.name, price: s.price }));
+  }),
+
+  /** Create a new booking (guest + reservation + optional service IDs). */
   create: receptionistProcedure
     .input(
       z.object({
         guest: z.object({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
-          nationality: z.string().min(1),
           nationalityId: z.string().min(1),
-          phone: z.string().optional(),
+          phone: z.string().min(1),
+          address: z.string().optional(),
+          dob: z.string().min(1),
         }),
         roomId: z.number(),
         numberOfGuests: z.number().min(1),
         checkIn: z.coerce.date(),
         checkOut: z.coerce.date(),
+        serviceIds: z.array(z.number()).optional(),
       }),
     )
     .mutation(async ({ input }) => {
@@ -212,21 +221,16 @@ export const bookingsRouter = router({
       }
     }),
 
-  /** Add a service / extra activity to a reservation. */
-  addActivity: receptionistProcedure
+  /** Add a predefined service to a reservation by service ID. */
+  addService: receptionistProcedure
     .input(
       z.object({
         reservationId: z.number(),
-        activity: z.string().min(1),
-        price: z.string(),
+        serviceId: z.number(),
       }),
     )
     .mutation(async ({ input }) => {
-      const row = await addActivity(
-        input.reservationId,
-        input.activity,
-        input.price,
-      );
+      const row = await addService(input.reservationId, input.serviceId);
       return { id: row.id };
     }),
 });

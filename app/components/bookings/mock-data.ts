@@ -14,7 +14,7 @@ export interface BookingGuest {
   isLoyal:     boolean;
 }
 
-export interface BookingActivity {
+export interface BookingService {
   activity: string;
   price:    string;
 }
@@ -29,7 +29,7 @@ export interface Booking {
   checkOut:     string;
   nights:       number;
   status:       BookingStatus;
-  activities:   BookingActivity[];
+  services:     BookingService[];
 }
 
 // ─── Status display config ────────────────────────────────────────────────────
@@ -44,23 +44,3 @@ export const bookingStatusConfig: Record<
   "cancelled":   { label: "Cancelled",   bg: "#FCEBEB", text: "#A32D2D" },
 };
 
-// ─── Available services ───────────────────────────────────────────────────────
-
-export const ALL_SERVICES = [
-  "Breakfast",
-  "Laundry",
-  "Airport transfer",
-  "Extra bed",
-  "Room service",
-  "Mini bar",
-];
-
-// ─── Available rooms for new booking form ────────────────────────────────────
-
-export const AVAILABLE_ROOMS = [
-  { value: "103-single",  label: "103 · Single · EGP 300/night"  },
-  { value: "106-double",  label: "106 · Double · EGP 450/night"  },
-  { value: "201-double",  label: "201 · Double · EGP 450/night"  },
-  { value: "304-single",  label: "304 · Single · EGP 300/night"  },
-  { value: "308-single",  label: "308 · Single · EGP 300/night"  },
-];

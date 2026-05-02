@@ -166,9 +166,9 @@ export function BookingDetailPanel({ booking, onClose }: BookingDetailPanelProps
       {/* Services / Activities */}
       <div>
         <SectionLabel>Services</SectionLabel>
-        {booking.activities.length > 0 ? (
+        {booking.services.length > 0 ? (
           <div className="flex flex-col gap-[6px]">
-            {booking.activities.map((a, i) => (
+            {booking.services.map((a, i) => (
               <div key={i} className="flex items-center justify-between">
                 <span className="text-[10px] font-medium" style={{ color: colors.text }}>
                   {a.activity}

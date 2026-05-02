@@ -8,7 +8,7 @@ import {
 import { guests } from "./guests";
 import { rooms } from "./rooms";
 import { bills } from "./bills";
-import { reservationActivities } from "./reservation-activities";
+import { reservationServices } from "./reservation-services";
 
 export const reservationStatus = pgEnum("reservation_status", [
   "new",
@@ -51,6 +51,6 @@ export const reservationsRelations = relations(
       references: [rooms.id],
     }),
     bills: many(bills),
-    activities: many(reservationActivities),
+    services: many(reservationServices),
   }),
 );

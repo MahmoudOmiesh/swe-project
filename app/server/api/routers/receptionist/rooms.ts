@@ -74,7 +74,7 @@ function mapRoom(row: Awaited<ReturnType<typeof listRooms>>[number]) {
           bookingId: `#${String(r.id)}`,
           checkIn: fmtDate(r.checkInAt),
           checkOut: fmtDate(r.checkOutAt),
-          services: r.activities.map((a) => a.activity),
+          services: r.services.map((rs) => rs.service.name),
           isLoyal: r.guest.isLoyal,
         };
       })()

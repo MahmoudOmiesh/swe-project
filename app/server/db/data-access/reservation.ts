@@ -5,7 +5,8 @@ import {
   guests,
   rooms,
   bills,
-  reservationActivities,
+  services,
+  reservationServices,
 } from "@/server/db/schema";
 
 
@@ -13,7 +14,7 @@ type ReservationStatus = "new" | "checked-in" | "cancelled" | "checked-out";
 type PaymentMethod = "cash" | "card" | "bank_transfer" | "other";
 
 
-/** List all bookings with guest, room, and activity data. */
+/** List all bookings with guest, room, and service data. */
 export async function listBookings(filters?: {
   status?: ReservationStatus;
   search?: string;
@@ -22,8 +23,9 @@ export async function listBookings(filters?: {
     with: {
       guest: true,
       room: true,
-      activities: {
-        orderBy: (activities, { asc }) => [asc(activities.createdAt)],
+      services: {
+        with: { service: true },
+        orderBy: (rs, { asc }) => [asc(rs.createdAt)],
       },
     },
     where: filters?.status
@@ -53,8 +55,9 @@ export async function getBookingById(id: number) {
     with: {
       guest: true,
       room: true,
-      activities: {
-        orderBy: (activities, { asc }) => [asc(activities.createdAt)],
+      services: {
+        with: { service: true },
+        orderBy: (rs, { asc }) => [asc(rs.createdAt)],
       },
     },
   });
@@ -111,21 +114,28 @@ export async function getBookingStats() {
   return stats;
 }
 
+/** Return all predefined services. */
+export async function getAvailableServices() {
+  return db.select().from(services).orderBy(services.name);
+}
+
 // ─── Mutations ───────────────────────────────────────────────────────────────
 
-/** Create a booking: guest → reservation. Bill is created at checkout. */
+/** Create a booking: guest → reservation → optional services. Bill is created at checkout. */
 export async function createBooking(input: {
   guest: {
     firstName: string;
     lastName: string;
-    nationality: string;
     nationalityId: string;
-    phone?: string;
+    phone: string;
+    address?: string;
+    dob: string;
   };
   roomId: number;
   numberOfGuests: number;
   checkIn: Date;
   checkOut: Date;
+  serviceIds?: number[];
 }) {
   // 1. Create guest record
   const [guest] = await db
@@ -133,9 +143,10 @@ export async function createBooking(input: {
     .values({
       firstName: input.guest.firstName,
       lastName: input.guest.lastName,
-      nationality: input.guest.nationality,
       nationalityId: input.guest.nationalityId,
       phone: input.guest.phone,
+      address: input.guest.address,
+      dob: input.guest.dob,
     })
     .returning();
 
@@ -152,6 +163,16 @@ export async function createBooking(input: {
     })
     .returning();
 
+  // 3. Link services (if any)
+  if (input.serviceIds?.length) {
+    await db.insert(reservationServices).values(
+      input.serviceIds.map((serviceId) => ({
+        reservationId: reservation.id,
+        serviceId,
+      })),
+    );
+  }
+
   return reservation;
 }
 
@@ -160,10 +181,15 @@ export async function checkOutBooking(
   id: number,
   paymentMethod: PaymentMethod,
 ) {
-  // 1. Fetch reservation with room and activities
+  // 1. Fetch reservation with room and services
   const reservation = await db.query.reservations.findFirst({
     where: eq(reservations.id, id),
-    with: { room: true, activities: true },
+    with: {
+      room: true,
+      services: {
+        with: { service: true },
+      },
+    },
   });
 
   if (!reservation) throw new Error("Reservation not found");
@@ -174,8 +200,8 @@ export async function checkOutBooking(
       (1000 * 60 * 60 * 24),
   );
   const roomTotal = reservation.room.ratePerNight * nights;
-  const extrasTotal = reservation.activities.reduce(
-    (sum, a) => sum + Number(a.price),
+  const extrasTotal = reservation.services.reduce(
+    (sum, rs) => sum + Number(rs.service.price),
     0,
   );
   const totalAmount = roomTotal + extrasTotal;
@@ -215,15 +241,11 @@ export async function updateBookingStatus(
   return updated;
 }
 
-/** Add a service / extra activity to a reservation. */
-export async function addActivity(
-  reservationId: number,
-  activity: string,
-  price: string,
-) {
+/** Add a predefined service to a reservation by service ID. */
+export async function addService(reservationId: number, serviceId: number) {
   const [row] = await db
-    .insert(reservationActivities)
-    .values({ reservationId, activity, price })
+    .insert(reservationServices)
+    .values({ reservationId, serviceId })
     .returning();
   return row;
 }

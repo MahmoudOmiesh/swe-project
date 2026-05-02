@@ -12,8 +12,9 @@ export async function listRooms() {
         where: (reservations, { eq }) => eq(reservations.status, "checked-in"),
         with: {
           guest: true,
-          activities: {
-            orderBy: (activities, { asc }) => [asc(activities.createdAt)],
+          services: {
+            with: { service: true },
+            orderBy: (rs, { asc }) => [asc(rs.createdAt)],
           },
         },
         limit: 1,
@@ -32,8 +33,9 @@ export async function getRoomById(id: number) {
         where: (reservations, { eq }) => eq(reservations.status, "checked-in"),
         with: {
           guest: true,
-          activities: {
-            orderBy: (activities, { asc }) => [asc(activities.createdAt)],
+          services: {
+            with: { service: true },
+            orderBy: (rs, { asc }) => [asc(rs.createdAt)],
           },
         },
         limit: 1,
