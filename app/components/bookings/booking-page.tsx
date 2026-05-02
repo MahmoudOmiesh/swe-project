@@ -4,14 +4,16 @@ import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
-import type { BookingStatus, Booking } from "./mock-data";
 import { BookingRow, COL_WIDTHS } from "./booking-row";
+import type { BookingListItem } from "./booking-row";
 import { BookingDetailPanel } from "./booking-detail-panel";
 import { NewBookingPanel } from "./new-booking-panel";
 
 // ─── Status filter config ─────────────────────────────────────────────────────
 
-const STATUS_FILTERS: { label: string; value: BookingStatus | "all" }[] = [
+type StatusFilter = "all" | "new" | "checked-in" | "checked-out" | "cancelled";
+
+const STATUS_FILTERS: { label: string; value: StatusFilter }[] = [
   { label: "All",         value: "all"         },
   { label: "New",         value: "new"         },
   { label: "Checked In",  value: "checked-in"  },
@@ -87,19 +89,19 @@ interface BookingsPageProps {
   basePath: string;
 }
 
-type PanelMode = "detail" | "new" | null;
+type PanelMode = "detail" | "new" | "edit" | null;
 
 export function BookingsPage({ basePath }: BookingsPageProps) {
   const trpc = useTRPC();
 
-  const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all");
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search,       setSearch]       = useState("");
-  const [selected,     setSelected]     = useState<Booking | null>(null);
+  const [selectedId,   setSelectedId]   = useState<number | null>(null);
   const [panelMode,    setPanelMode]    = useState<PanelMode>(null);
 
   // Backend queries
   const listInput = {
-    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(statusFilter !== "all" ? { status: statusFilter as Exclude<StatusFilter, "all"> } : {}),
     ...(search.trim() ? { search: search.trim() } : {}),
   };
 
@@ -113,30 +115,34 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
     trpc.receptionist.bookings.stats.queryOptions(),
   );
 
-  function handleSelectBooking(booking: Booking) {
-    if (selected?.id === booking.id && panelMode === "detail") {
-      setSelected(null);
+  function handleSelectBooking(booking: BookingListItem) {
+    if (selectedId === booking.id && panelMode === "detail") {
+      setSelectedId(null);
       setPanelMode(null);
     } else {
-      setSelected(booking);
+      setSelectedId(booking.id);
       setPanelMode("detail");
     }
   }
 
   function handleNewBooking() {
-    setSelected(null);
+    setSelectedId(null);
     setPanelMode("new");
   }
 
+  function handleEditBooking() {
+    setPanelMode("edit");
+  }
+
   function handleClosePanel() {
-    setSelected(null);
+    setSelectedId(null);
     setPanelMode(null);
   }
 
   return (
     <div className="hms-shell flex flex-1 flex-col overflow-hidden">
       {/* Topbar */}
-      <header className="hms-topbar flex flex-shrink-0 items-center justify-between px-5 py-[13px]">
+      <header className="hms-topbar flex shrink-0 items-center justify-between px-5 py-[13px]">
         <h1 className="font-display text-[17px]" style={{ color: colors.text }}>
           Bookings
         </h1>
@@ -236,7 +242,7 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
                 <BookingRow
                   key={booking.id}
                   booking={booking}
-                  isSelected={selected?.id === booking.id}
+                  isSelected={selectedId === booking.id}
                   onClick={handleSelectBooking}
                 />
               ))
@@ -244,12 +250,16 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
           </div>
         </div>
 
-        {/* Right — detail or new booking panel */}
-        {panelMode === "detail" && selected && (
+        {/* Right — detail, edit, or new booking panel */}
+        {panelMode === "detail" && selectedId != null && (
           <BookingDetailPanel
-            booking={selected}
+            bookingId={selectedId}
             onClose={handleClosePanel}
+            onEdit={handleEditBooking}
           />
+        )}
+        {panelMode === "edit" && selectedId != null && (
+          <NewBookingPanel onClose={handleClosePanel} bookingId={selectedId} />
         )}
         {panelMode === "new" && (
           <NewBookingPanel onClose={handleClosePanel} />

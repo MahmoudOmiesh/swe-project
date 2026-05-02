@@ -55,6 +55,7 @@ export async function getBookingById(id: number) {
     with: {
       guest: true,
       room: true,
+      bills: true,
       services: {
         with: { service: true },
         orderBy: (rs, { asc }) => [asc(rs.createdAt)],
@@ -204,7 +205,9 @@ export async function checkOutBooking(
     (sum, rs) => sum + Number(rs.service.price),
     0,
   );
-  const totalAmount = roomTotal + extrasTotal;
+  const subtotal = roomTotal + extrasTotal;
+  const tax = subtotal * 0.14;
+  const totalAmount = subtotal + tax;
 
   // 3. Create bill
   const [bill] = await db
@@ -212,8 +215,8 @@ export async function checkOutBooking(
     .values({
       reservationId: id,
       extraServices: extrasTotal.toFixed(2),
+      tax: tax.toFixed(2),
       totalAmount: totalAmount.toFixed(2),
-      paymentStatus: "pending",
       paymentMethod,
     })
     .returning();
@@ -237,6 +240,73 @@ export async function updateBookingStatus(
     .set({ status })
     .where(eq(reservations.id, id))
     .returning();
+
+  return updated;
+}
+
+/** Update a booking: guest fields + reservation fields + replace services. */
+export async function updateBooking(
+  id: number,
+  input: {
+    guest: {
+      firstName: string;
+      lastName: string;
+      nationalityId: string;
+      phone: string;
+      address?: string;
+      dob: string;
+    };
+    roomId: number;
+    numberOfGuests: number;
+    checkIn: Date;
+    checkOut: Date;
+    serviceIds?: number[];
+  },
+) {
+  // 1. Find reservation to get guestId
+  const reservation = await db.query.reservations.findFirst({
+    where: eq(reservations.id, id),
+  });
+  if (!reservation) throw new Error("Reservation not found");
+
+  // 2. Update guest record
+  await db
+    .update(guests)
+    .set({
+      firstName: input.guest.firstName,
+      lastName: input.guest.lastName,
+      nationalityId: input.guest.nationalityId,
+      phone: input.guest.phone,
+      address: input.guest.address,
+      dob: input.guest.dob,
+    })
+    .where(eq(guests.id, reservation.guestId));
+
+  // 3. Update reservation
+  const [updated] = await db
+    .update(reservations)
+    .set({
+      roomId: input.roomId,
+      numberOfGuests: input.numberOfGuests,
+      checkInAt: input.checkIn,
+      checkOutAt: input.checkOut,
+    })
+    .where(eq(reservations.id, id))
+    .returning();
+
+  // 4. Replace services — delete old, insert new
+  await db
+    .delete(reservationServices)
+    .where(eq(reservationServices.reservationId, id));
+
+  if (input.serviceIds?.length) {
+    await db.insert(reservationServices).values(
+      input.serviceIds.map((serviceId) => ({
+        reservationId: id,
+        serviceId,
+      })),
+    );
+  }
 
   return updated;
 }

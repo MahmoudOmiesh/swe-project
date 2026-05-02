@@ -8,12 +8,6 @@ import {
 } from "drizzle-orm/pg-core";
 import { reservations } from "./reservations";
 
-export const paymentStatus = pgEnum("payment_status", [
-  "pending",
-  "paid",
-  "failed",
-]);
-
 export const paymentMethod = pgEnum("payment_method", [
   "cash",
   "card",
@@ -38,7 +32,6 @@ export const bills = pgTable("bills", {
 
   totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull(),
 
-  paymentStatus: paymentStatus("payment_status").notNull(),
   paymentMethod: paymentMethod("payment_method").notNull(),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),

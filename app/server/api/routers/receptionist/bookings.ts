@@ -5,6 +5,7 @@ import {
   listBookings,
   getBookingById,
   createBooking,
+  updateBooking,
   updateBookingStatus,
   checkOutBooking,
   getAvailableRooms,
@@ -52,38 +53,88 @@ function capitalize(s: string) {
   return s.charAt(0).toUpperCase() + s.slice(1);
 }
 
-/** Transform a DAL reservation row into the flat Booking object the UI expects. */
-function mapBooking(row: Awaited<ReturnType<typeof listBookings>>[number]) {
+// ─── Mappers ────────────────────────────────────────────────────────────────
+
+type ListRow = Awaited<ReturnType<typeof listBookings>>[number];
+type DetailRow = NonNullable<Awaited<ReturnType<typeof getBookingById>>>;
+
+/** Slim item for table rows — only what the list needs. */
+function mapListItem(row: ListRow) {
+  const name = `${row.guest.firstName} ${row.guest.lastName}`;
+  const avatar = avatarColors(name);
+
+  return {
+    id: row.id,
+    guestName: name,
+    guestInitials: initials(row.guest.firstName, row.guest.lastName),
+    avatarBg: avatar.bg,
+    avatarColor: avatar.text,
+    isLoyal: row.guest.isLoyal,
+    numGuests: row.numberOfGuests,
+    room: row.room.number,
+    roomType: capitalize(row.room.type),
+    checkIn: fmtDate(row.checkInAt),
+    checkOut: fmtDate(row.checkOutAt),
+    status: row.status,
+  };
+}
+
+/** Full detail for the side panel + edit form — includes raw IDs and all guest fields. */
+function mapDetail(row: DetailRow) {
   const name = `${row.guest.firstName} ${row.guest.lastName}`;
   const avatar = avatarColors(name);
   const nights = nightsBetween(row.checkInAt, row.checkOutAt);
 
+  const bill = row.bills[0] ?? null;
+
   return {
-    id: `#${String(row.id)}`,
-    guest: {
-      name,
-      initials: initials(row.guest.firstName, row.guest.lastName),
-      avatarBg: avatar.bg,
-      avatarColor: avatar.text,
-      nationality: "",
-      nationalId: row.guest.nationalityId,
-      phone: row.guest.phone ?? "",
-      numGuests: row.numberOfGuests,
-      isLoyal: row.guest.isLoyal,
-    },
+    id: row.id,
+    // Guest — display
+    guestName: name,
+    guestInitials: initials(row.guest.firstName, row.guest.lastName),
+    avatarBg: avatar.bg,
+    avatarColor: avatar.text,
+    isLoyal: row.guest.isLoyal,
+    // Guest — raw for edit form
+    firstName: row.guest.firstName,
+    lastName: row.guest.lastName,
+    nationalId: row.guest.nationalityId,
+    phone: row.guest.phone,
+    address: row.guest.address,
+    dob: row.guest.dob, // string "YYYY-MM-DD"
+    numGuests: row.numberOfGuests,
+    // Room
+    roomId: row.room.id,
     room: row.room.number,
     roomType: capitalize(row.room.type),
     ratePerNight: row.room.ratePerNight,
-    checkIn: fmtDate(row.checkInAt),
-    checkOut: fmtDate(row.checkOutAt),
+    // Stay
+    checkIn: row.checkInAt, // Date (SuperJSON preserves)
+    checkOut: row.checkOutAt,
     nights,
     status: row.status,
+    // Services with IDs
     services: row.services.map((rs) => ({
-      activity: rs.service.name,
+      id: rs.service.id,
+      name: rs.service.name,
       price: rs.service.price,
     })),
+    // Bill (only present for checked-out reservations)
+    bill: bill
+      ? {
+          id: bill.id,
+          tax: bill.tax,
+          extraServices: bill.extraServices,
+          discount: bill.discount,
+          totalAmount: bill.totalAmount,
+          paymentMethod: bill.paymentMethod,
+          createdAt: bill.createdAt,
+        }
+      : null,
   };
 }
+
+// ─── Router ─────────────────────────────────────────────────────────────────
 
 const bookingStatusSchema = z.enum([
   "new",
@@ -93,7 +144,7 @@ const bookingStatusSchema = z.enum([
 ]);
 
 export const bookingsRouter = router({
-  /** List bookings, optionally filtered by status and/or search text. */
+  /** List bookings — returns slim items for the table. */
   list: receptionistProcedure
     .input(
       z
@@ -105,16 +156,16 @@ export const bookingsRouter = router({
     )
     .query(async ({ input }) => {
       const rows = await listBookings(input ?? undefined);
-      return rows.map(mapBooking);
+      return rows.map(mapListItem);
     }),
 
-  /** Get a single booking by its numeric reservation ID. */
+  /** Get a single booking with full detail (for side panel + edit form). */
   getById: receptionistProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const row = await getBookingById(input.id);
       if (!row) return null;
-      return mapBooking(row);
+      return mapDetail(row);
     }),
 
   /** Aggregate stats by status. */
@@ -175,6 +226,40 @@ export const bookingsRouter = router({
           code: "BAD_REQUEST",
           message:
             err instanceof Error ? err.message : "Failed to create booking",
+        });
+      }
+    }),
+
+  /** Update an existing booking (guest + reservation + services). */
+  update: receptionistProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        guest: z.object({
+          firstName: z.string().min(1),
+          lastName: z.string().min(1),
+          nationalityId: z.string().min(1),
+          phone: z.string().min(1),
+          address: z.string().optional(),
+          dob: z.string().min(1),
+        }),
+        roomId: z.number(),
+        numberOfGuests: z.number().min(1),
+        checkIn: z.coerce.date(),
+        checkOut: z.coerce.date(),
+        serviceIds: z.array(z.number()).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const { id, ...data } = input;
+        const updated = await updateBooking(id, data);
+        return { id: updated.id };
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            err instanceof Error ? err.message : "Failed to update booking",
         });
       }
     }),

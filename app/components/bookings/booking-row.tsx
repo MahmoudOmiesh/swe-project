@@ -1,12 +1,14 @@
 import { cn } from "@/lib/utils";
 import { colors } from "@/components/dashboard/theme";
 import { BookingStatusBadge } from "./booking-status-badge";
-import type { Booking } from "./mock-data";
+import type { RouterOutputs } from "@/utils/trpc/react";
+
+export type BookingListItem = RouterOutputs["receptionist"]["bookings"]["list"][number];
 
 interface BookingRowProps {
-  booking:    Booking;
+  booking:    BookingListItem;
   isSelected: boolean;
-  onClick:    (booking: Booking) => void;
+  onClick:    (booking: BookingListItem) => void;
 }
 
 // Column widths — must match BookingsTable header
@@ -32,23 +34,23 @@ export function BookingRow({ booking, isSelected, onClick }: BookingRowProps) {
     >
       {/* ID */}
       <span className="text-[10px]" style={{ color: colors.textMuted }}>
-        {booking.id}
+        #{booking.id}
       </span>
 
       {/* Guest */}
       <div className="flex items-center gap-[7px]">
         <div
-          className="flex h-6 w-6 flex-shrink-0 items-center justify-center rounded-full text-[8px] font-medium"
-          style={{ background: booking.guest.avatarBg, color: booking.guest.avatarColor }}
+          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-[8px] font-medium"
+          style={{ background: booking.avatarBg, color: booking.avatarColor }}
         >
-          {booking.guest.initials}
+          {booking.guestInitials}
         </div>
         <div className="min-w-0">
           <div className="flex items-center gap-1">
             <span className="truncate text-[11px] font-medium" style={{ color: colors.text }}>
-              {booking.guest.name}
+              {booking.guestName}
             </span>
-            {booking.guest.isLoyal && (
+            {booking.isLoyal && (
               <span
                 className="rounded-full px-[5px] py-px text-[7px] font-medium"
                 style={{ background: colors.goldPale, color: colors.status.occupied.text }}
@@ -58,7 +60,7 @@ export function BookingRow({ booking, isSelected, onClick }: BookingRowProps) {
             )}
           </div>
           <div className="text-[9px]" style={{ color: colors.textMuted }}>
-            {booking.guest.numGuests} guest{booking.guest.numGuests > 1 ? "s" : ""}
+            {booking.numGuests} guest{booking.numGuests > 1 ? "s" : ""}
           </div>
         </div>
       </div>

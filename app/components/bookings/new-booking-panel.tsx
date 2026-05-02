@@ -2,7 +2,7 @@ import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { X, Loader2, CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 import { addDays } from "date-fns";
 
 import { useTRPC } from "@/utils/trpc/react";
@@ -27,6 +27,7 @@ import {
   newBookingSchema,
   type NewBookingFormValues,
 } from "./new-booking-schema";
+import type { BookingDetail } from "./booking-detail-panel";
 
 // ─── Layout helpers (match existing sidebar look) ────────────────────────────
 
@@ -61,15 +62,17 @@ function ErrorMsg({ message }: { message?: string }) {
   return <p className="mt-0.5 text-[9px] text-red-500">{message}</p>;
 }
 
-// ─── Panel ───────────────────────────────────────────────────────────────────
+// ─── Inner form (rendered once data is ready) ────────────────────────────────
 
-interface NewBookingPanelProps {
+interface BookingFormProps {
   onClose: () => void;
+  booking?: BookingDetail;
 }
 
-export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
+function BookingForm({ onClose, booking }: BookingFormProps) {
   const trpc = useTRPC();
   const queryClient = useQueryClient();
+  const isEdit = !!booking;
 
   // ── Form setup ──────────────────────────────────────────────────────────────
 
@@ -82,19 +85,33 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
     formState: { errors },
   } = useForm<NewBookingFormValues>({
     resolver: zodResolver(newBookingSchema),
-    defaultValues: {
-      firstName: "",
-      lastName: "",
-      nationalityId: "",
-      phone: "",
-      address: "",
-      dob: undefined,
-      roomId: "",
-      numberOfGuests: 1,
-      checkIn: undefined,
-      checkOut: undefined,
-      services: [],
-    },
+    defaultValues: booking
+      ? {
+          firstName: booking.firstName,
+          lastName: booking.lastName,
+          nationalityId: booking.nationalId,
+          phone: booking.phone,
+          address: booking.address ?? "",
+          dob: parse(booking.dob, "yyyy-MM-dd", new Date()),
+          roomId: String(booking.roomId),
+          numberOfGuests: booking.numGuests,
+          checkIn: new Date(booking.checkIn),
+          checkOut: new Date(booking.checkOut),
+          services: booking.services.map((s) => String(s.id)),
+        }
+      : {
+          firstName: "",
+          lastName: "",
+          nationalityId: "",
+          phone: "",
+          address: "",
+          dob: undefined,
+          roomId: "",
+          numberOfGuests: 1,
+          checkIn: undefined,
+          checkOut: undefined,
+          services: [],
+        },
   });
 
   // ── Dependent queries ───────────────────────────────────────────────────────
@@ -102,8 +119,7 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
   const dob = watch("dob");
   const checkIn = watch("checkIn");
   const checkOut = watch("checkOut");
-  const datesValid =
-    !!checkIn && !!checkOut && checkOut > checkIn;
+  const datesValid = !!checkIn && !!checkOut && checkOut > checkIn;
 
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
     ...trpc.receptionist.bookings.availableRooms.queryOptions({
@@ -117,7 +133,7 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
     trpc.receptionist.bookings.availableServices.queryOptions(),
   );
 
-  // ── Mutation ────────────────────────────────────────────────────────────────
+  // ── Mutations ───────────────────────────────────────────────────────────────
 
   const createBooking = useMutation(
     trpc.receptionist.bookings.create.mutationOptions({
@@ -128,8 +144,19 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
     }),
   );
 
+  const editBooking = useMutation(
+    trpc.receptionist.bookings.update.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries();
+        onClose();
+      },
+    }),
+  );
+
+  const mutation = isEdit ? editBooking : createBooking;
+
   function onSubmit(data: NewBookingFormValues) {
-    createBooking.mutate({
+    const payload = {
       guest: {
         firstName: data.firstName,
         lastName: data.lastName,
@@ -143,8 +170,31 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
       checkIn: data.checkIn,
       checkOut: data.checkOut,
       serviceIds: data.services.map(Number),
-    });
+    };
+
+    if (isEdit) {
+      editBooking.mutate({ id: booking!.id, ...payload });
+    } else {
+      createBooking.mutate(payload);
+    }
   }
+
+  // In edit mode the current room might not appear in the "available" list
+  // because it's already booked. Ensure it shows up in the dropdown.
+  const currentRoomInList = rooms.some((r) => r.id === booking?.roomId);
+  const roomOptions =
+    isEdit && booking && !currentRoomInList && datesValid
+      ? [
+          {
+            id: booking.roomId,
+            number: booking.room,
+            type: booking.roomType,
+            ratePerNight: booking.ratePerNight,
+            label: `${booking.room} · ${booking.roomType} · EGP ${String(booking.ratePerNight)}/night`,
+          },
+          ...rooms,
+        ]
+      : rooms;
 
   // ── Render ──────────────────────────────────────────────────────────────────
 
@@ -167,13 +217,13 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
               className="mb-[3px] text-[9px] font-medium uppercase tracking-widest"
               style={{ color: colors.textMuted }}
             >
-              New booking
+              {isEdit ? "Edit booking" : "New booking"}
             </div>
             <div
               className="font-display text-[16px]"
               style={{ color: colors.text }}
             >
-              Guest registration
+              {isEdit ? `Booking #${booking.id}` : "Guest registration"}
             </div>
           </div>
           <button
@@ -409,12 +459,12 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
                       />
                     </SelectTrigger>
                     <SelectContent position="popper" className="max-h-48 overflow-y-auto">
-                      {rooms.length === 0 && !roomsLoading && (
+                      {roomOptions.length === 0 && !roomsLoading && (
                         <div className="px-2 py-1.5 text-[11px] text-muted-foreground">
                           No rooms available
                         </div>
                       )}
-                      {rooms.map((room) => (
+                      {roomOptions.map((room) => (
                         <SelectItem key={room.id} value={String(room.id)}>
                           {room.label}
                         </SelectItem>
@@ -498,9 +548,9 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
         </div>
 
         {/* ── Mutation error feedback ─────────────────────────────────────── */}
-        {createBooking.error && (
+        {mutation.error && (
           <p className="rounded-md bg-red-50 px-2 py-1.5 text-[10px] text-red-600">
-            {createBooking.error.message}
+            {mutation.error.message}
           </p>
         )}
 
@@ -508,7 +558,7 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
         <div className="mt-auto flex flex-col gap-[6px] pt-2">
           <button
             type="submit"
-            disabled={createBooking.isPending}
+            disabled={mutation.isPending}
             className="flex w-full items-center justify-center gap-1.5 rounded-full py-[7px] text-[11px] font-medium transition-opacity hover:opacity-80 disabled:opacity-60"
             style={{
               background: colors.gold,
@@ -518,10 +568,10 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
               cursor: "pointer",
             }}
           >
-            {createBooking.isPending && (
+            {mutation.isPending && (
               <Loader2 size={12} className="animate-spin" />
             )}
-            Create booking
+            {isEdit ? "Save changes" : "Create booking"}
           </button>
 
           <button
@@ -541,5 +591,43 @@ export function NewBookingPanel({ onClose }: NewBookingPanelProps) {
         </div>
       </form>
     </aside>
+  );
+}
+
+// ─── Exported panel (handles data fetching for edit mode) ────────────────────
+
+interface NewBookingPanelProps {
+  onClose: () => void;
+  /** When provided, fetches booking detail and opens in edit mode. */
+  bookingId?: number;
+}
+
+export function NewBookingPanel({ onClose, bookingId }: NewBookingPanelProps) {
+  const trpc = useTRPC();
+  const isEdit = bookingId != null;
+
+  const { data: booking, isLoading } = useQuery({
+    ...trpc.receptionist.bookings.getById.queryOptions({ id: bookingId! }),
+    enabled: isEdit,
+  });
+
+  // Edit mode — wait for data before rendering form so defaultValues are correct
+  if (isEdit && (isLoading || !booking)) {
+    return (
+      <aside
+        className="flex h-full w-[264px] shrink-0 items-center justify-center"
+        style={{ background: colors.cream, borderLeft: `0.5px solid ${colors.border}` }}
+      >
+        <Loader2 size={20} className="animate-spin" style={{ color: colors.textMuted }} />
+      </aside>
+    );
+  }
+
+  return (
+    <BookingForm
+      key={isEdit ? `edit-${bookingId}` : "new"}
+      onClose={onClose}
+      booking={isEdit ? booking! : undefined}
+    />
   );
 }
