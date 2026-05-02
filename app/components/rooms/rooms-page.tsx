@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import type { RoomStatus } from "@/components/dashboard/theme";
-import {
-  groupByFloor,
-  countByStatus,
-  type RoomRecord,
-} from "./mock-data";
+import { groupByFloor, countByStatus } from "./mock-data";
 import { RoomCard } from "./room-card";
+import type { RoomListItem } from "./room-card";
 import { RoomDetailPanel } from "./room-detail-panel";
 
 // ─── Filter pill ──────────────────────────────────────────────────────────────
@@ -107,6 +105,7 @@ interface RoomsPageProps {
 
 export function RoomsPage({ basePath }: RoomsPageProps) {
   const trpc = useTRPC();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: rooms = [], isLoading } = useQuery(
     trpc.receptionist.rooms.list.queryOptions(),
@@ -115,7 +114,9 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "all">("all");
   const [floorFilter,  setFloorFilter]  = useState<number | "all">("all");
   const [search,       setSearch]       = useState("");
-  const [selected,     setSelected]     = useState<RoomRecord | null>(null);
+
+  // Panel state from search params
+  const selectedId = searchParams.get("room") ? Number(searchParams.get("room")) : null;
 
   // Derived: filtered rooms
   const filtered = useMemo(() => {
@@ -126,7 +127,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
         const q = search.toLowerCase();
         if (
           !room.number.includes(q) &&
-          !room.guest?.name.toLowerCase().includes(q)
+          !room.guestName?.toLowerCase().includes(q)
         ) return false;
       }
       return true;
@@ -139,8 +140,14 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
   const floors    = useMemo(() => [...byFloor.keys()].sort(), [byFloor]);
   const allFloors = [...new Set(rooms.map((r) => r.floor))].sort();
 
-  function handleSelect(room: RoomRecord) {
-    setSelected((prev) => (prev?.id === room.id ? null : room));
+  function handleSelect(room: RoomListItem) {
+    const next = new URLSearchParams(searchParams);
+    if (selectedId === room.id) {
+      next.delete("room");
+    } else {
+      next.set("room", String(room.id));
+    }
+    setSearchParams(next, { replace: true });
   }
 
   return (
@@ -237,7 +244,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
                       <RoomCard
                         key={room.id}
                         room={room}
-                        isSelected={selected?.id === room.id}
+                        isSelected={selectedId === room.id}
                         onClick={handleSelect}
                       />
                     ))}
@@ -249,11 +256,15 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
         </div>
 
         {/* Detail panel */}
-        {selected && (
+        {selectedId !== null && (
           <RoomDetailPanel
-            room={selected}
+            roomId={selectedId}
             basePath={basePath}
-            onClose={() => setSelected(null)}
+            onClose={() => {
+              const next = new URLSearchParams(searchParams);
+              next.delete("room");
+              setSearchParams(next, { replace: true });
+            }}
           />
         )}
       </div>

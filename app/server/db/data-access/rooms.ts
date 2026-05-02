@@ -4,17 +4,25 @@ import { rooms } from "@/server/db/schema";
 
 type RoomServiceMode = "cleaning" | "maintenance";
 
-/** List all rooms with their active (checked-in) reservation and guest data. */
+/**
+ * List all rooms with minimal reservation data —
+ * just enough to compute status and display cards.
+ */
 export async function listRooms() {
   return db.query.rooms.findMany({
     with: {
       reservations: {
         where: (reservations, { eq }) => eq(reservations.status, "checked-in"),
+        columns: {
+          id: true,
+          checkOutAt: true,
+        },
         with: {
-          guest: true,
-          services: {
-            with: { service: true },
-            orderBy: (rs, { asc }) => [asc(rs.createdAt)],
+          guest: {
+            columns: {
+              firstName: true,
+              lastName: true,
+            },
           },
         },
         limit: 1,

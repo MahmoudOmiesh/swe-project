@@ -12,6 +12,12 @@ import {
   getBookingStats,
   getAvailableServices,
   addService,
+  getTodayArrivals,
+  checkInReservation,
+  getTodayDepartures,
+  getLateCheckouts,
+  listBills,
+  getBillingStats,
 } from "@/server/db/data-access/reservation";
 
 
@@ -318,4 +324,185 @@ export const bookingsRouter = router({
       const row = await addService(input.reservationId, input.serviceId);
       return { id: row.id };
     }),
+
+  /** Today's arrivals — reservations with status "new" arriving today. */
+  todayArrivals: receptionistProcedure.query(async () => {
+    const rows = await getTodayArrivals();
+    return rows.map((row) => {
+      const name = `${row.guest.firstName} ${row.guest.lastName}`;
+      const avatar = avatarColors(name);
+      return {
+        id: row.id,
+        guestName: name,
+        initials: initials(row.guest.firstName, row.guest.lastName),
+        avatarBg: avatar.bg,
+        avatarColor: avatar.text,
+        roomLabel: `Room ${row.room.number} · ${capitalize(row.room.type)}`,
+        bookingId: `#${row.id}`,
+        time: row.checkInAt.toLocaleTimeString("en-GB", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: false,
+        }),
+        // Guest details
+        nationalId: row.guest.nationalityId,
+        phone: row.guest.phone,
+        address: row.guest.address ?? "—",
+        dob: row.guest.dob,
+        // Stay details
+        room: `${row.room.number} · ${capitalize(row.room.type)}`,
+        checkInDate: fmtDate(row.checkInAt),
+        checkOutDate: fmtDate(row.checkOutAt),
+        numGuests: row.numberOfGuests,
+        ratePerNight: row.room.ratePerNight,
+        // Services attached to this reservation
+        services: row.services.map((rs) => ({
+          id: rs.service.id,
+          name: rs.service.name,
+          price: rs.service.price,
+        })),
+      };
+    });
+  }),
+
+  /** Check in a reservation: updates status and optionally replaces services. */
+  checkIn: receptionistProcedure
+    .input(
+      z.object({
+        id: z.number(),
+        serviceIds: z.array(z.number()).optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      try {
+        const updated = await checkInReservation(input.id, input.serviceIds);
+        return { id: updated.id, status: updated.status };
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            err instanceof Error ? err.message : "Failed to check in",
+        });
+      }
+    }),
+
+  /** Today's departures — checked-in / checked-out reservations leaving today. */
+  todayDepartures: receptionistProcedure.query(async () => {
+    const rows = await getTodayDepartures();
+    return rows.map((row) => {
+      const name = `${row.guest.firstName} ${row.guest.lastName}`;
+      const avatar = avatarColors(name);
+      const nights = nightsBetween(row.checkInAt, row.checkOutAt);
+      const bill = row.bills[0] ?? null;
+
+      // Compute bill preview from reservation data
+      const roomTotal = row.room.ratePerNight * nights;
+      const serviceLines = row.services.map((rs) => ({
+        label: rs.service.name,
+        amount: Number(rs.service.price),
+        tone: "default" as const,
+      }));
+      const extrasTotal = serviceLines.reduce((s, l) => s + l.amount, 0);
+      const subtotal = roomTotal + extrasTotal;
+      const taxAmount = bill ? Number(bill.tax) : subtotal * 0.14;
+      const totalDue = bill ? Number(bill.totalAmount) : subtotal + taxAmount;
+
+      const billItems: { label: string; amount: number; tone: "default" | "muted" | "success" }[] = [
+        {
+          label: `Room ${row.room.number} · ${capitalize(row.room.type)} · ${nights} night${nights !== 1 ? "s" : ""}`,
+          amount: roomTotal,
+          tone: "default",
+        },
+        ...serviceLines,
+        { label: "Tax (14%)", amount: taxAmount, tone: "muted" },
+      ];
+
+      if (bill && Number(bill.discount) > 0) {
+        billItems.push({
+          label: "Discount",
+          amount: -Number(bill.discount),
+          tone: "success" as const,
+        });
+      }
+
+      return {
+        id: row.id,
+        guestName: name,
+        initials: initials(row.guest.firstName, row.guest.lastName),
+        avatarBg: avatar.bg,
+        avatarColor: avatar.text,
+        roomLabel: `Room ${row.room.number}`,
+        bookingId: `#${row.id}`,
+        staySummary: `${row.numberOfGuests} guest${row.numberOfGuests !== 1 ? "s" : ""}`,
+        paymentStatus: (bill ? "Paid" : "Pending") as "Paid" | "Pending",
+        billItems,
+        totalDue,
+      };
+    });
+  }),
+
+  /** Late checkout alerts — checked-in guests past their checkout time. */
+  lateCheckouts: receptionistProcedure.query(async () => {
+    const rows = await getLateCheckouts();
+    return rows.map((row) => ({
+      id: row.id,
+      message: `Room ${row.room.number} — expected ${row.checkOutAt.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", hour12: false })}, still occupied. Extra charge may apply.`,
+    }));
+  }),
+
+  /** List all bills with line-item breakdowns. */
+  bills: receptionistProcedure.query(async () => {
+    const rows = await listBills();
+    return rows.map((row) => {
+      const res = row.reservation;
+      const name = `${res.guest.firstName} ${res.guest.lastName}`;
+      const avatar = avatarColors(name);
+      const nights = nightsBetween(res.checkInAt, res.checkOutAt);
+
+      const roomTotal = res.room.ratePerNight * nights;
+      const serviceLines = res.services.map((rs) => ({
+        label: rs.service.name,
+        amount: Number(rs.service.price),
+        tone: "default" as const,
+      }));
+      const lineItems: { label: string; amount: number; tone?: "default" | "success" }[] = [
+        {
+          label: `Room ${res.room.number} · ${capitalize(res.room.type)} · ${nights} night${nights !== 1 ? "s" : ""}`,
+          amount: roomTotal,
+        },
+        ...serviceLines,
+        { label: `Tax (14%)`, amount: Number(row.tax) },
+      ];
+
+      if (Number(row.discount) > 0) {
+        lineItems.push({
+          label: "Discount",
+          amount: -Number(row.discount),
+          tone: "success",
+        });
+      }
+
+      return {
+        id: row.id,
+        billNumber: `B-${String(row.id).padStart(3, "0")}`,
+        guestName: name,
+        initials: initials(res.guest.firstName, res.guest.lastName),
+        avatarBg: avatar.bg,
+        avatarColor: avatar.text,
+        room: res.room.number,
+        amount: Number(row.totalAmount),
+        status: "Paid" as const,
+        bookingId: `#${res.id}`,
+        paymentMethod: row.paymentMethod,
+        lineItems,
+        createdAt: row.createdAt,
+      };
+    });
+  }),
+
+  /** Billing summary stats. */
+  billingStats: receptionistProcedure.query(async () => {
+    const stats = await getBillingStats();
+    return stats;
+  }),
 });

@@ -54,10 +54,38 @@ function computeStatus(
   return "available";
 }
 
-// ─── Mapper ──────────────────────────────────────────────────────────────────
+// ─── Mappers ─────────────────────────────────────────────────────────────────
 
-/** Map a DAL room row into the RoomRecord shape the UI expects. */
-function mapRoom(row: Awaited<ReturnType<typeof listRooms>>[number]) {
+/** Map a DAL room row into the minimal shape needed by the room grid. */
+function mapRoomMinimal(row: Awaited<ReturnType<typeof listRooms>>[number]) {
+  const hasActiveReservation = row.reservations.length > 0;
+  const status = computeStatus(row.serviceMode, hasActiveReservation);
+
+  return {
+    id: row.id,
+    number: row.number,
+    floor: row.floor,
+    type: row.type,
+    status,
+    capacity: row.capacity,
+    ratePerNight: row.ratePerNight,
+    guestName: hasActiveReservation
+      ? `${row.reservations[0].guest.firstName} ${row.reservations[0].guest.lastName}`
+      : undefined,
+    checkOut: hasActiveReservation
+      ? fmtDate(row.reservations[0].checkOutAt)
+      : undefined,
+    maintenanceNote:
+      status === "maintenance"
+        ? (row.maintenanceNote ?? undefined)
+        : undefined,
+  };
+}
+
+/** Map a full DAL room row into the detailed shape for the detail panel. */
+function mapRoomDetail(row: Awaited<ReturnType<typeof getRoomById>>) {
+  if (!row) return null;
+
   const hasActiveReservation = row.reservations.length > 0;
   const status = computeStatus(row.serviceMode, hasActiveReservation);
 
@@ -87,6 +115,7 @@ function mapRoom(row: Awaited<ReturnType<typeof listRooms>>[number]) {
     type: row.type,
     status,
     capacity: row.capacity,
+    ratePerNight: row.ratePerNight,
     guest,
     maintenanceNote:
       status === "maintenance"
@@ -98,19 +127,18 @@ function mapRoom(row: Awaited<ReturnType<typeof listRooms>>[number]) {
 // ─── Router ──────────────────────────────────────────────────────────────────
 
 export const roomsRouter = router({
-  /** List all rooms with computed status and active guest info. */
+  /** List all rooms with minimal data for the grid view. */
   list: receptionistProcedure.query(async () => {
     const rows = await listRooms();
-    return rows.map(mapRoom);
+    return rows.map(mapRoomMinimal);
   }),
 
-  /** Get a single room by ID. */
+  /** Get a single room by ID with full details. */
   getById: receptionistProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const row = await getRoomById(input.id);
-      if (!row) return null;
-      return mapRoom(row);
+      return mapRoomDetail(row);
     }),
 
   /** Update a room's service mode (cleaning/maintenance) or clear it. */

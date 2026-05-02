@@ -1,7 +1,11 @@
-import { OCCUPANCY_DAYS } from "./data";
+import type { OccupancyDay } from "./data";
 
-export function OccupancyChart() {
-  const max = Math.max(...OCCUPANCY_DAYS.map((d) => d.value));
+interface OccupancyChartProps {
+  days: OccupancyDay[];
+}
+
+export function OccupancyChart({ days }: OccupancyChartProps) {
+  const max = Math.max(...days.map((d) => d.value), 1);
   return (
     <div className="hms-surface hms-panel">
       <div className="hms-panel-header">
@@ -9,7 +13,7 @@ export function OccupancyChart() {
         <span className="hms-panel-meta">This week</span>
       </div>
       <div className="hms-bars-row">
-        {OCCUPANCY_DAYS.map((d) => (
+        {days.map((d) => (
           <div
             key={d.label}
             className="hms-bar"
@@ -21,7 +25,7 @@ export function OccupancyChart() {
         ))}
       </div>
       <div className="hms-days-row">
-        {OCCUPANCY_DAYS.map((d) => (
+        {days.map((d) => (
           <div
             key={d.label}
             className="hms-day-label"

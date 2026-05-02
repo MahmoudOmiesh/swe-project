@@ -1,18 +1,21 @@
 import { cn } from "@/lib/utils";
 import { colors } from "@/components/dashboard/theme";
+import type { RouterOutputs } from "@/utils/trpc/react";
 import { RoomStatusBadge } from "./status-badge";
-import { roomTypeLabel, roomTypeRate, type RoomRecord } from "./mock-data";
+import { roomTypeLabel } from "./mock-data";
+
+export type RoomListItem = RouterOutputs["receptionist"]["rooms"]["list"][number];
 
 interface RoomCardProps {
-  room:      RoomRecord;
+  room:       RoomListItem;
   isSelected: boolean;
-  onClick:   (room: RoomRecord) => void;
+  onClick:    (room: RoomListItem) => void;
 }
 
 export function RoomCard({ room, isSelected, onClick }: RoomCardProps) {
   const subText = (() => {
-    if (room.status === "occupied" && room.guest)
-      return `${room.guest.name.split(" ")[0]} ${room.guest.name.split(" ").at(-1)} · out ${room.guest.checkOut.split(" ").slice(0, 2).join(" ")}`;
+    if (room.status === "occupied" && room.guestName)
+      return `${room.guestName} · out ${room.checkOut}`;
     if (room.status === "cleaning")
       return "Assigned to housekeeping";
     if (room.status === "maintenance" && room.maintenanceNote)
@@ -47,7 +50,7 @@ export function RoomCard({ room, isSelected, onClick }: RoomCardProps) {
 
       {/* Type */}
       <div className="text-[10px]" style={{ color: colors.textMuted }}>
-        {roomTypeLabel[room.type]}
+        {roomTypeLabel[room.type] ?? room.type}
       </div>
 
       {/* Rate */}
@@ -55,7 +58,7 @@ export function RoomCard({ room, isSelected, onClick }: RoomCardProps) {
         className="mt-[3px] text-[11px] font-medium"
         style={{ color: colors.textSub }}
       >
-        EGP {roomTypeRate[room.type].toLocaleString()} / night
+        EGP {room.ratePerNight.toLocaleString()} / night
       </div>
 
       {/* Guest or status note */}

@@ -1,25 +1,43 @@
-import {
-  ROOMS,
-  ROOM_STATUS_LABELS,
-  ROOM_STATUS_STYLES,
-} from "./data";
+import type { RoomStatus } from "./data";
+import { ROOM_STATUS_STYLES } from "./data";
 
-export function RoomStatusGrid() {
+interface RoomItem {
+  id: number;
+  number: string;
+  status: RoomStatus;
+}
+
+interface RoomStatusGridProps {
+  rooms: RoomItem[];
+  onViewAll?: () => void;
+  onRoomClick?: (roomId: number) => void;
+}
+
+export function RoomStatusGrid({ rooms, onViewAll, onRoomClick }: RoomStatusGridProps) {
+  const legend = (["occupied", "available", "cleaning", "maintenance"] as const).map(
+    (status) => ({
+      status,
+      label: status.charAt(0).toUpperCase() + status.slice(1),
+      count: rooms.filter((r) => r.status === status).length,
+    }),
+  );
+
   return (
     <div className="hms-surface hms-panel">
       <div className="hms-panel-header">
         <span className="hms-panel-title">Room Status Overview</span>
-        <button type="button" className="hms-link-button">
+        <button type="button" className="hms-link-button" onClick={onViewAll}>
           View all
         </button>
       </div>
       <div className="hms-room-grid">
-        {ROOMS.map((r) => (
+        {rooms.map((r) => (
           <button
             key={r.number}
             type="button"
             className="hms-room-cell"
             aria-label={`Room ${r.number} is ${r.status}`}
+            onClick={() => onRoomClick?.(r.id)}
             style={{
               background: ROOM_STATUS_STYLES[r.status].bg,
               color: ROOM_STATUS_STYLES[r.status].color,
@@ -31,7 +49,7 @@ export function RoomStatusGrid() {
         ))}
       </div>
       <div className="hms-legend">
-        {ROOM_STATUS_LABELS.map(({ status, label, count }) => (
+        {legend.map(({ status, label, count }) => (
           <div key={status} className="hms-legend-item">
             <div
               className="hms-legend-swatch"

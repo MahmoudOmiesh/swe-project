@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "react-router";
 import { useQuery } from "@tanstack/react-query";
 import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
@@ -93,11 +94,14 @@ type PanelMode = "detail" | "new" | "edit" | null;
 
 export function BookingsPage({ basePath }: BookingsPageProps) {
   const trpc = useTRPC();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [statusFilter, setStatusFilter] = useState<StatusFilter>("all");
   const [search,       setSearch]       = useState("");
-  const [selectedId,   setSelectedId]   = useState<number | null>(null);
-  const [panelMode,    setPanelMode]    = useState<PanelMode>(null);
+
+  // Panel state from search params
+  const panelMode = (searchParams.get("panel") as PanelMode) ?? null;
+  const selectedId = searchParams.get("id") ? Number(searchParams.get("id")) : null;
 
   // Backend queries
   const listInput = {
@@ -115,28 +119,36 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
     trpc.receptionist.bookings.stats.queryOptions(),
   );
 
+  function setPanel(params: Record<string, string> | null) {
+    const next = new URLSearchParams(searchParams);
+    next.delete("panel");
+    next.delete("id");
+    if (params) {
+      for (const [k, v] of Object.entries(params)) next.set(k, v);
+    }
+    setSearchParams(next, { replace: true });
+  }
+
   function handleSelectBooking(booking: BookingListItem) {
     if (selectedId === booking.id && panelMode === "detail") {
-      setSelectedId(null);
-      setPanelMode(null);
+      setPanel(null);
     } else {
-      setSelectedId(booking.id);
-      setPanelMode("detail");
+      setPanel({ panel: "detail", id: String(booking.id) });
     }
   }
 
   function handleNewBooking() {
-    setSelectedId(null);
-    setPanelMode("new");
+    setPanel({ panel: "new" });
   }
 
   function handleEditBooking() {
-    setPanelMode("edit");
+    if (selectedId != null) {
+      setPanel({ panel: "edit", id: String(selectedId) });
+    }
   }
 
   function handleClosePanel() {
-    setSelectedId(null);
-    setPanelMode(null);
+    setPanel(null);
   }
 
   return (

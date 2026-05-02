@@ -1,7 +1,6 @@
 import { colors } from "@/components/dashboard/theme";
-import type { InvoiceRecord } from "./mock-data";
 
-export function InvoiceStatus({ status }: { status: InvoiceRecord["status"] }) {
+export function InvoiceStatus({ status }: { status: "Pending" | "Paid" }) {
   const isPending = status === "Pending";
 
   return (
@@ -16,4 +15,3 @@ export function InvoiceStatus({ status }: { status: InvoiceRecord["status"] }) {
     </span>
   );
 }
-

@@ -1,11 +1,19 @@
+"use client";
+
+import { useState } from "react";
 import { Link } from "react-router";
-import { X } from "lucide-react";
+import { X, Loader2 } from "lucide-react";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useTRPC } from "@/utils/trpc/react";
+import type { RouterOutputs } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import { RoomStatusBadge, TextBadge } from "./status-badge";
-import { roomTypeLabel, roomTypeRate, type RoomRecord } from "./mock-data";
+import { roomTypeLabel } from "./mock-data";
+
+type RoomDetail = NonNullable<RouterOutputs["receptionist"]["rooms"]["getById"]>;
 
 interface RoomDetailPanelProps {
-  room:     RoomRecord;
+  roomId:   number;
   basePath: string;
   onClose:  () => void;
 }
@@ -34,9 +42,74 @@ function Divider() {
   return <div style={{ height: "0.5px", background: colors.border2 }} />;
 }
 
+// ─── Action button ────────────────────────────────────────────────────────────
+
+function ActionButton({
+  label,
+  onClick,
+  loading,
+  variant = "outline",
+}: {
+  label: string;
+  onClick: () => void;
+  loading?: boolean;
+  variant?: "gold" | "outline";
+}) {
+  const isGold = variant === "gold";
+  return (
+    <button
+      onClick={onClick}
+      disabled={loading}
+      className="flex w-full items-center justify-center gap-1.5 rounded-full py-[7px] text-[11px] font-medium transition-opacity hover:opacity-80 disabled:opacity-50"
+      style={{
+        background: isGold ? colors.gold : "transparent",
+        color:      isGold ? "#fff" : colors.textSub,
+        border:     isGold ? "none" : `0.5px solid ${colors.border}`,
+        cursor:     loading ? "not-allowed" : "pointer",
+        fontFamily: "inherit",
+      }}
+    >
+      {loading && <Loader2 size={12} className="animate-spin" />}
+      {label}
+    </button>
+  );
+}
+
 // ─── Panel ────────────────────────────────────────────────────────────────────
 
-export function RoomDetailPanel({ room, basePath, onClose }: RoomDetailPanelProps) {
+export function RoomDetailPanel({ roomId, basePath, onClose }: RoomDetailPanelProps) {
+  const trpc = useTRPC();
+  const queryClient = useQueryClient();
+
+  const { data: room, isLoading } = useQuery(
+    trpc.receptionist.rooms.getById.queryOptions({ id: roomId }),
+  );
+
+  const [maintenanceNote, setMaintenanceNote] = useState("");
+
+  const updateServiceMode = useMutation(
+    trpc.receptionist.rooms.updateServiceMode.mutationOptions({
+      onSuccess: () => {
+        void queryClient.invalidateQueries();
+        setMaintenanceNote("");
+      },
+    }),
+  );
+
+  if (isLoading || !room) {
+    return (
+      <aside
+        className="flex h-full w-[260px] flex-shrink-0 items-center justify-center"
+        style={{
+          background: colors.cream,
+          borderLeft: `0.5px solid ${colors.border}`,
+        }}
+      >
+        <Loader2 size={20} className="animate-spin" style={{ color: colors.textMuted }} />
+      </aside>
+    );
+  }
+
   return (
     <aside
       className="flex h-full w-[260px] flex-shrink-0 flex-col gap-3 overflow-y-auto p-4"
@@ -84,9 +157,9 @@ export function RoomDetailPanel({ room, basePath, onClose }: RoomDetailPanelProp
           Room details
         </div>
         <div className="grid grid-cols-2 gap-[8px]">
-          <Field label="Type"     value={roomTypeLabel[room.type]} />
+          <Field label="Type"     value={roomTypeLabel[room.type] ?? room.type} />
           <Field label="Floor"    value={room.floor} />
-          <Field label="Rate"     value={`EGP ${roomTypeRate[room.type].toLocaleString()}/night`} />
+          <Field label="Rate"     value={`EGP ${room.ratePerNight.toLocaleString()}/night`} />
           <Field label="Capacity" value={`${room.capacity} guest${room.capacity > 1 ? "s" : ""}`} />
         </div>
       </div>
@@ -182,34 +255,137 @@ export function RoomDetailPanel({ room, basePath, onClose }: RoomDetailPanelProp
         </>
       )}
 
-      {/* Update status */}
-      <div>
-        <div
-          className="mb-[6px] text-[9px] font-medium uppercase tracking-[0.1em]"
-          style={{ color: colors.textMuted }}
-        >
-          Update status
-        </div>
-        <select
-          defaultValue={room.status}
-          className="w-full rounded-[8px] px-[10px] py-[7px] text-[11px] outline-none"
-          style={{
-            background: colors.cream2,
-            border: `0.5px solid ${colors.border}`,
-            color: colors.text,
-            fontFamily: "inherit",
-          }}
-        >
-          <option value="occupied">Occupied</option>
-          <option value="available">Available</option>
-          <option value="cleaning">Cleaning</option>
-          <option value="maintenance">Maintenance</option>
-        </select>
-      </div>
+      {/* Status actions — only for non-occupied rooms */}
+      {room.status !== "occupied" && (
+        <>
+          <div>
+            <div
+              className="mb-[6px] text-[9px] font-medium uppercase tracking-[0.1em]"
+              style={{ color: colors.textMuted }}
+            >
+              Change status
+            </div>
 
-      {/* Actions */}
-      <div className="mt-auto flex flex-col gap-[6px]">
-        {room.guest && (
+            <div className="flex flex-col gap-[6px]">
+              {/* Available → Cleaning / Maintenance */}
+              {room.status === "available" && (
+                <>
+                  <ActionButton
+                    label="Mark as Cleaning"
+                    variant="outline"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: "cleaning",
+                      })
+                    }
+                  />
+                  <ActionButton
+                    label="Mark as Maintenance"
+                    variant="outline"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: "maintenance",
+                        maintenanceNote: maintenanceNote || undefined,
+                      })
+                    }
+                  />
+                  <input
+                    value={maintenanceNote}
+                    onChange={(e) => setMaintenanceNote(e.target.value)}
+                    placeholder="Maintenance note (optional)"
+                    className="w-full rounded-[8px] px-[10px] py-[7px] text-[11px] outline-none"
+                    style={{
+                      background: colors.cream2,
+                      border: `0.5px solid ${colors.border}`,
+                      color: colors.text,
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Cleaning → Available / Maintenance */}
+              {room.status === "cleaning" && (
+                <>
+                  <ActionButton
+                    label="Mark as Available"
+                    variant="gold"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: null,
+                      })
+                    }
+                  />
+                  <ActionButton
+                    label="Mark as Maintenance"
+                    variant="outline"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: "maintenance",
+                        maintenanceNote: maintenanceNote || undefined,
+                      })
+                    }
+                  />
+                  <input
+                    value={maintenanceNote}
+                    onChange={(e) => setMaintenanceNote(e.target.value)}
+                    placeholder="Maintenance note (optional)"
+                    className="w-full rounded-[8px] px-[10px] py-[7px] text-[11px] outline-none"
+                    style={{
+                      background: colors.cream2,
+                      border: `0.5px solid ${colors.border}`,
+                      color: colors.text,
+                      fontFamily: "inherit",
+                    }}
+                  />
+                </>
+              )}
+
+              {/* Maintenance → Available / Cleaning */}
+              {room.status === "maintenance" && (
+                <>
+                  <ActionButton
+                    label="Mark as Available"
+                    variant="gold"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: null,
+                      })
+                    }
+                  />
+                  <ActionButton
+                    label="Mark as Cleaning"
+                    variant="outline"
+                    loading={updateServiceMode.isPending}
+                    onClick={() =>
+                      updateServiceMode.mutate({
+                        id: room.id,
+                        serviceMode: "cleaning",
+                      })
+                    }
+                  />
+                </>
+              )}
+            </div>
+          </div>
+
+          <Divider />
+        </>
+      )}
+
+      {/* Actions — booking/billing links only for occupied rooms */}
+      {room.status === "occupied" && room.guest && (
+        <div className="mt-auto flex flex-col gap-[6px]">
           <Link
             to={`${basePath}/bookings/${room.guest.bookingId.replace("#", "")}`}
             className="block rounded-full py-[7px] text-center text-[11px] font-medium transition-opacity hover:opacity-80"
@@ -217,8 +393,6 @@ export function RoomDetailPanel({ room, basePath, onClose }: RoomDetailPanelProp
           >
             View full booking
           </Link>
-        )}
-        {room.status === "occupied" && (
           <Link
             to={`${basePath}/billing/new?room=${room.number}`}
             className="block rounded-full py-[7px] text-center text-[11px] font-medium transition-colors hover:bg-[#F0EBE0]"
@@ -230,17 +404,8 @@ export function RoomDetailPanel({ room, basePath, onClose }: RoomDetailPanelProp
           >
             Generate bill
           </Link>
-        )}
-        {room.status === "available" && (
-          <Link
-            to={`${basePath}/checkin?room=${room.number}`}
-            className="block rounded-full py-[7px] text-center text-[11px] font-medium transition-opacity hover:opacity-80"
-            style={{ background: colors.gold, color: "#fff" }}
-          >
-            Check in guest
-          </Link>
-        )}
-      </div>
+        </div>
+      )}
     </aside>
   );
 }

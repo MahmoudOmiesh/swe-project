@@ -1,7 +1,6 @@
 import { colors } from "@/components/dashboard/theme";
-import type { DepartureRecord } from "./mock-data";
 
-export function StatusBadge({ status }: { status: DepartureRecord["paymentStatus"] }) {
+export function StatusBadge({ status }: { status: "Pending" | "Paid" }) {
   const isPaid = status === "Paid";
 
   return (
@@ -16,4 +15,3 @@ export function StatusBadge({ status }: { status: DepartureRecord["paymentStatus
     </span>
   );
 }
-

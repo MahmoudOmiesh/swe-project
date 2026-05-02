@@ -4,16 +4,21 @@ interface ServicePillProps {
   label: string;
   extra?: string;
   active: boolean;
+  onClick?: () => void;
 }
 
-export function ServicePill({ label, extra, active }: ServicePillProps) {
+export function ServicePill({ label, extra, active, onClick }: ServicePillProps) {
+  const Tag = onClick ? "button" : "div";
+
   return (
-    <div
+    <Tag
+      onClick={onClick}
       className="flex items-center gap-2 rounded-[10px] px-3 py-[10px] text-[11px]"
       style={{
         background: active ? colors.goldPale : colors.cream,
         border: `0.5px solid ${active ? colors.goldLight : colors.border2}`,
         color: colors.textSub,
+        cursor: onClick ? "pointer" : "default",
       }}
     >
       <span
@@ -30,6 +35,6 @@ export function ServicePill({ label, extra, active }: ServicePillProps) {
         {label}
         {extra ? ` (${extra})` : ""}
       </span>
-    </div>
+    </Tag>
   );
 }
