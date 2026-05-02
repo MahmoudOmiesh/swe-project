@@ -10,7 +10,7 @@ interface BookingRowProps {
 }
 
 // Column widths — must match BookingsTable header
-export const COL_WIDTHS = "52px 1fr 80px 95px 95px 80px 88px";
+export const COL_WIDTHS = "52px 1fr 80px 95px 95px 80px";
 
 export function BookingRow({ booking, isSelected, onClick }: BookingRowProps) {
   return (
@@ -81,34 +81,6 @@ export function BookingRow({ booking, isSelected, onClick }: BookingRowProps) {
       {/* Status */}
       <div>
         <BookingStatusBadge status={booking.status} />
-      </div>
-
-      {/* Actions */}
-      <div className="flex gap-[5px]" onClick={(e) => e.stopPropagation()}>
-        {booking.status !== "cancelled" && (
-          <button
-            className="rounded-[5px] px-[7px] py-[2px] text-[9px] transition-colors hover:bg-[#F0EBE0]"
-            style={{
-              border:     `0.5px solid ${colors.border}`,
-              color:      colors.textSub,
-              fontFamily: "inherit",
-              cursor:     "pointer",
-            }}
-          >
-            Edit
-          </button>
-        )}
-        <button
-          className="rounded-[5px] px-[7px] py-[2px] text-[9px] transition-colors hover:bg-[#F0EBE0]"
-          style={{
-            border:     `0.5px solid ${colors.border}`,
-            color:      colors.textSub,
-            fontFamily: "inherit",
-            cursor:     "pointer",
-          }}
-        >
-          View
-        </button>
       </div>
     </button>
   );

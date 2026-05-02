@@ -2,7 +2,7 @@ import { relations } from "drizzle-orm";
 import { pgTable, text, integer, timestamp, pgEnum } from "drizzle-orm/pg-core";
 import { reservations } from "./reservations";
 
-export const roomType = pgEnum("room_type", ["single", "double", "triple"]);
+export const roomType = pgEnum("room_type", ["single", "double", "suite"]);
 export const roomStatus = pgEnum("room_status", [
   "available",
   "occupied",
@@ -14,6 +14,7 @@ export const rooms = pgTable("rooms", {
   number: text("room_number").notNull().unique(),
   type: roomType("type").notNull(),
   status: text("status").notNull().default("available"),
+  ratePerNight: integer("rate_per_night").notNull().default(0),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")

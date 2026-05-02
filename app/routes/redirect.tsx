@@ -8,8 +8,6 @@ export async function loader({ request }: Route.LoaderArgs) {
     headers: request.headers,
   });
 
-  console.log("session", session);
-
   if (!session?.user) {
     throw redirect("/login");
   }

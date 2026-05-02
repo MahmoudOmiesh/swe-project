@@ -1,8 +1,21 @@
 import { relations } from "drizzle-orm";
-import { pgTable, integer, timestamp } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  integer,
+  timestamp,
+  pgEnum,
+} from "drizzle-orm/pg-core";
 import { guests } from "./guests";
 import { rooms } from "./rooms";
 import { bills } from "./bills";
+import { reservationActivities } from "./reservation-activities";
+
+export const reservationStatus = pgEnum("reservation_status", [
+  "new",
+  "checked-in",
+  "cancelled",
+  "checked-out",
+]);
 
 export const reservations = pgTable("reservations", {
   id: integer("id").primaryKey().generatedAlwaysAsIdentity(),
@@ -16,6 +29,8 @@ export const reservations = pgTable("reservations", {
   numberOfGuests: integer("number_of_guests").notNull(),
   checkInAt: timestamp("check_in_date").notNull(),
   checkOutAt: timestamp("check_out_date").notNull(),
+
+  status: reservationStatus("status").notNull().default("new"),
 
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
@@ -36,5 +51,6 @@ export const reservationsRelations = relations(
       references: [rooms.id],
     }),
     bills: many(bills),
+    activities: many(reservationActivities),
   }),
 );

@@ -143,7 +143,6 @@ export function BookingDetailPanel({ booking, onClose }: BookingDetailPanelProps
           <Field label="Nationality" value={booking.guest.nationality} />
           <Field label="Guests"      value={`${booking.guest.numGuests} adult${booking.guest.numGuests > 1 ? "s" : ""}`} />
           <Field label="Phone"       value={booking.guest.phone} />
-          <Field label="Purpose"     value={booking.guest.purpose} />
         </div>
       </div>
 
@@ -164,84 +163,35 @@ export function BookingDetailPanel({ booking, onClose }: BookingDetailPanelProps
 
       <Divider />
 
-      {/* Services */}
+      {/* Services / Activities */}
       <div>
         <SectionLabel>Services</SectionLabel>
-        <div className="flex flex-wrap gap-[4px]">
-          {booking.services.map((s) => (
-            <span
-              key={s}
-              className="rounded-full px-[8px] py-[3px] text-[9px] font-medium"
-              style={{ background: colors.goldPale, color: colors.status.occupied.text }}
-            >
-              {s}
-            </span>
-          ))}
-          {booking.status !== "cancelled" && (
-            <button
-              className="rounded-full px-[8px] py-[3px] text-[9px] transition-colors hover:bg-[#F0EBE0]"
-              style={{
-                background:  "transparent",
-                color:       colors.textMuted,
-                border:      `0.5px dashed ${colors.border}`,
-                fontFamily:  "inherit",
-                cursor:      "pointer",
-              }}
-            >
-              + Add service
-            </button>
-          )}
-          {booking.services.length === 0 && booking.status === "cancelled" && (
-            <span className="text-[10px]" style={{ color: colors.textMuted }}>None</span>
-          )}
-        </div>
-      </div>
-
-      <Divider />
-
-      {/* Activity timeline */}
-      <div>
-        <SectionLabel>Activity</SectionLabel>
-        <div className="flex flex-col">
-          {booking.activity.map((item, i) => (
-            <div key={i} className="relative flex gap-[10px] pb-[10px] last:pb-0">
-              {/* Dot */}
-              <div
-                className="relative z-10 mt-[3px] h-[8px] w-[8px] flex-shrink-0 rounded-full"
-                style={{ background: item.color }}
-              />
-              {/* Connector line */}
-              {i < booking.activity.length - 1 && (
-                <div
-                  className="absolute left-[3.5px] top-[11px] bottom-0 w-px"
-                  style={{ background: colors.border2 }}
-                />
-              )}
-              {/* Content */}
-              <div className="min-w-0">
-                <div className="text-[10px] font-medium" style={{ color: colors.text }}>
-                  {item.label}
-                </div>
-                <div className="mt-[1px] text-[9px]" style={{ color: colors.textMuted }}>
-                  {item.sub}
-                </div>
+        {booking.activities.length > 0 ? (
+          <div className="flex flex-col gap-[6px]">
+            {booking.activities.map((a, i) => (
+              <div key={i} className="flex items-center justify-between">
+                <span className="text-[10px] font-medium" style={{ color: colors.text }}>
+                  {a.activity}
+                </span>
+                <span className="text-[10px]" style={{ color: colors.textMuted }}>
+                  EGP {Number(a.price).toLocaleString()}
+                </span>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        ) : (
+          <span className="text-[10px]" style={{ color: colors.textMuted }}>None</span>
+        )}
       </div>
 
       {/* Actions */}
-      {booking.status !== "cancelled" && (
+      {booking.status !== "cancelled" && booking.status !== "checked-out" && (
         <div className="mt-auto flex flex-col gap-[6px]">
           {booking.status === "new" && (
-            <ActionButton variant="primary">Confirm &amp; check in</ActionButton>
+            <ActionButton variant="primary">Check in</ActionButton>
           )}
-          {booking.status === "confirmed" && (
+          {booking.status === "checked-in" && (
             <ActionButton variant="primary">Process check-out</ActionButton>
-          )}
-          {booking.status === "pending" && (
-            <ActionButton variant="primary">Confirm booking</ActionButton>
           )}
           <ActionButton>Edit booking</ActionButton>
           <ActionButton danger>Cancel booking</ActionButton>

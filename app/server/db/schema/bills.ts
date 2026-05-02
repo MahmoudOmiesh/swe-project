@@ -28,7 +28,6 @@ export const bills = pgTable("bills", {
     .unique()
     .references(() => reservations.id, { onDelete: "cascade" }),
 
-  roomRate: numeric("room_rate", { precision: 10, scale: 2 }).notNull(),
   tax: numeric("tax", { precision: 10, scale: 2 }).notNull().default("0"),
   extraServices: numeric("extra_services", { precision: 10, scale: 2 })
     .notNull()

@@ -1,13 +1,10 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
-import type { BookingStatus } from "./mock-data";
-import {
-  MOCK_BOOKINGS,
-  getBookingStats,
-  type Booking,
-} from "./mock-data";
+import type { BookingStatus, Booking } from "./mock-data";
 import { BookingRow, COL_WIDTHS } from "./booking-row";
 import { BookingDetailPanel } from "./booking-detail-panel";
 import { NewBookingPanel } from "./new-booking-panel";
@@ -15,16 +12,16 @@ import { NewBookingPanel } from "./new-booking-panel";
 // ─── Status filter config ─────────────────────────────────────────────────────
 
 const STATUS_FILTERS: { label: string; value: BookingStatus | "all" }[] = [
-  { label: "All",       value: "all"       },
-  { label: "Confirmed", value: "confirmed" },
-  { label: "Pending",   value: "pending"   },
-  { label: "Cancelled", value: "cancelled" },
-  { label: "New",       value: "new"       },
+  { label: "All",         value: "all"         },
+  { label: "New",         value: "new"         },
+  { label: "Checked In",  value: "checked-in"  },
+  { label: "Checked Out", value: "checked-out" },
+  { label: "Cancelled",   value: "cancelled"   },
 ];
 
 // ─── Table header columns ─────────────────────────────────────────────────────
 
-const TABLE_HEADERS = ["ID", "Guest", "Room", "Check-in", "Check-out", "Status", "Actions"];
+const TABLE_HEADERS = ["ID", "Guest", "Room", "Check-in", "Check-out", "Status"];
 
 // ─── Small reusable pieces ────────────────────────────────────────────────────
 
@@ -93,28 +90,28 @@ interface BookingsPageProps {
 type PanelMode = "detail" | "new" | null;
 
 export function BookingsPage({ basePath }: BookingsPageProps) {
+  const trpc = useTRPC();
+
   const [statusFilter, setStatusFilter] = useState<BookingStatus | "all">("all");
   const [search,       setSearch]       = useState("");
   const [selected,     setSelected]     = useState<Booking | null>(null);
   const [panelMode,    setPanelMode]    = useState<PanelMode>(null);
 
-  // Derived: filtered bookings
-  const filtered = useMemo(() => {
-    return MOCK_BOOKINGS.filter((b) => {
-      if (statusFilter !== "all" && b.status !== statusFilter) return false;
-      if (search) {
-        const q = search.toLowerCase();
-        if (
-          !b.guest.name.toLowerCase().includes(q) &&
-          !b.id.toLowerCase().includes(q) &&
-          !b.room.includes(q)
-        ) return false;
-      }
-      return true;
-    });
-  }, [statusFilter, search]);
+  // Backend queries
+  const listInput = {
+    ...(statusFilter !== "all" ? { status: statusFilter } : {}),
+    ...(search.trim() ? { search: search.trim() } : {}),
+  };
 
-  const stats = useMemo(() => getBookingStats(MOCK_BOOKINGS), []);
+  const { data: bookings = [], isLoading: isLoadingList } = useQuery(
+    trpc.receptionist.bookings.list.queryOptions(
+      Object.keys(listInput).length > 0 ? listInput : undefined,
+    ),
+  );
+
+  const { data: stats } = useQuery(
+    trpc.receptionist.bookings.stats.queryOptions(),
+  );
 
   function handleSelectBooking(booking: Booking) {
     if (selected?.id === booking.id && panelMode === "detail") {
@@ -164,10 +161,10 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
         <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-[18px]">
           {/* Summary */}
           <div className="grid grid-cols-4 gap-[9px]">
-            <SummaryCard label="Total"     value={stats.total}                                       />
-            <SummaryCard label="Confirmed" value={stats.confirmed} valueColor={colors.status.available.text}   />
-            <SummaryCard label="Pending"   value={stats.pending}   valueColor={colors.status.occupied.text}    />
-            <SummaryCard label="Cancelled" value={stats.cancelled} valueColor={colors.status.maintenance.text} />
+            <SummaryCard label="Total"       value={stats?.total ?? 0}                                               />
+            <SummaryCard label="Checked In"  value={stats?.checkedIn ?? 0}  valueColor={colors.status.available.text}   />
+            <SummaryCard label="New"         value={stats?.new ?? 0}        valueColor={colors.status.occupied.text}    />
+            <SummaryCard label="Cancelled"   value={stats?.cancelled ?? 0}  valueColor={colors.status.maintenance.text} />
           </div>
 
           {/* Filters */}
@@ -220,7 +217,14 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
             </div>
 
             {/* Rows */}
-            {filtered.length === 0 ? (
+            {isLoadingList ? (
+              <div
+                className="py-8 text-center text-[12px]"
+                style={{ color: colors.textMuted }}
+              >
+                Loading bookings…
+              </div>
+            ) : bookings.length === 0 ? (
               <div
                 className="py-8 text-center text-[12px]"
                 style={{ color: colors.textMuted }}
@@ -228,7 +232,7 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
                 No bookings match your filters.
               </div>
             ) : (
-              filtered.map((booking) => (
+              bookings.map((booking) => (
                 <BookingRow
                   key={booking.id}
                   booking={booking}
