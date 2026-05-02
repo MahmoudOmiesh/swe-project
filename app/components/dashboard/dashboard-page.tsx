@@ -24,19 +24,19 @@ export function DashboardPage({ user, basePath }: DashboardPageProps) {
 
   // ── Queries ──────────────────────────────────────────────────────────────
   const { data: stats } = useQuery(
-    trpc.receptionist.dashboard.stats.queryOptions(),
+    trpc.hotel.dashboard.stats.queryOptions(),
   );
 
   const { data: roomsList = [] } = useQuery(
-    trpc.receptionist.rooms.list.queryOptions(),
+    trpc.hotel.rooms.list.queryOptions(),
   );
 
   const { data: guests = [] } = useQuery(
-    trpc.receptionist.dashboard.guests.queryOptions(),
+    trpc.hotel.dashboard.guests.queryOptions(),
   );
 
   const { data: occupancy = [] } = useQuery(
-    trpc.receptionist.dashboard.weeklyOccupancy.queryOptions(),
+    trpc.hotel.dashboard.weeklyOccupancy.queryOptions(),
   );
 
   // ── Derived ──────────────────────────────────────────────────────────────

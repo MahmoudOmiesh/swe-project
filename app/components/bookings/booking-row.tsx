@@ -3,7 +3,7 @@ import { colors } from "@/components/dashboard/theme";
 import { BookingStatusBadge } from "./booking-status-badge";
 import type { RouterOutputs } from "@/utils/trpc/react";
 
-export type BookingListItem = RouterOutputs["receptionist"]["bookings"]["list"][number];
+export type BookingListItem = RouterOutputs["hotel"]["bookings"]["list"][number];
 
 interface BookingRowProps {
   booking:    BookingListItem;

@@ -34,7 +34,7 @@ export function CheckOutPage({ basePath }: CheckOutPageProps) {
   const {
     data: departures = [],
     isLoading: isLoadingDepartures,
-  } = useQuery(trpc.receptionist.bookings.todayDepartures.queryOptions());
+  } = useQuery(trpc.hotel.bookings.todayDepartures.queryOptions());
 
   // ── Local state ────────────────────────────────────────────────────────────
   const [selectedId, setSelectedId] = useState<number | null>(null);
@@ -51,10 +51,10 @@ export function CheckOutPage({ basePath }: CheckOutPageProps) {
 
   // ── Check-out mutation ─────────────────────────────────────────────────────
   const checkOutMutation = useMutation(
-    trpc.receptionist.bookings.checkOut.mutationOptions({
+    trpc.hotel.bookings.checkOut.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.receptionist.bookings.todayDepartures.queryKey(),
+          queryKey: trpc.hotel.bookings.todayDepartures.queryKey(),
         });
       },
     }),

@@ -110,13 +110,13 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
   };
 
   const { data: bookings = [], isLoading: isLoadingList } = useQuery(
-    trpc.receptionist.bookings.list.queryOptions(
+    trpc.hotel.bookings.list.queryOptions(
       Object.keys(listInput).length > 0 ? listInput : undefined,
     ),
   );
 
   const { data: stats } = useQuery(
-    trpc.receptionist.bookings.stats.queryOptions(),
+    trpc.hotel.bookings.stats.queryOptions(),
   );
 
   function setPanel(params: Record<string, string> | null) {

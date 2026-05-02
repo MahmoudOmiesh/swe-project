@@ -20,11 +20,11 @@ export function BillingPage() {
 
   // ── Queries ────────────────────────────────────────────────────────────────
   const { data: bills = [], isLoading } = useQuery(
-    trpc.receptionist.bookings.bills.queryOptions(),
+    trpc.hotel.bookings.bills.queryOptions(),
   );
 
   const { data: stats } = useQuery(
-    trpc.receptionist.bookings.billingStats.queryOptions(),
+    trpc.hotel.bookings.billingStats.queryOptions(),
   );
 
   // ── Local state ────────────────────────────────────────────────────────────

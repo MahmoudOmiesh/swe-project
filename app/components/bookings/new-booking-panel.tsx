@@ -122,7 +122,7 @@ function BookingForm({ onClose, booking }: BookingFormProps) {
   const datesValid = !!checkIn && !!checkOut && checkOut > checkIn;
 
   const { data: rooms = [], isLoading: roomsLoading } = useQuery({
-    ...trpc.receptionist.bookings.availableRooms.queryOptions({
+    ...trpc.hotel.bookings.availableRooms.queryOptions({
       checkIn: checkIn ?? new Date(),
       checkOut: checkOut ?? new Date(),
     }),
@@ -130,13 +130,13 @@ function BookingForm({ onClose, booking }: BookingFormProps) {
   });
 
   const { data: availableServices = [] } = useQuery(
-    trpc.receptionist.bookings.availableServices.queryOptions(),
+    trpc.hotel.bookings.availableServices.queryOptions(),
   );
 
   // ── Mutations ───────────────────────────────────────────────────────────────
 
   const createBooking = useMutation(
-    trpc.receptionist.bookings.create.mutationOptions({
+    trpc.hotel.bookings.create.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries();
         onClose();
@@ -145,7 +145,7 @@ function BookingForm({ onClose, booking }: BookingFormProps) {
   );
 
   const editBooking = useMutation(
-    trpc.receptionist.bookings.update.mutationOptions({
+    trpc.hotel.bookings.update.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries();
         onClose();
@@ -607,7 +607,7 @@ export function NewBookingPanel({ onClose, bookingId }: NewBookingPanelProps) {
   const isEdit = bookingId != null;
 
   const { data: booking, isLoading } = useQuery({
-    ...trpc.receptionist.bookings.getById.queryOptions({ id: bookingId! }),
+    ...trpc.hotel.bookings.getById.queryOptions({ id: bookingId! }),
     enabled: isEdit,
   });
 

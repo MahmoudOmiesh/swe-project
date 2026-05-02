@@ -10,7 +10,7 @@ import { colors } from "@/components/dashboard/theme";
 import { RoomStatusBadge, TextBadge } from "./status-badge";
 import { roomTypeLabel } from "./mock-data";
 
-type RoomDetail = NonNullable<RouterOutputs["receptionist"]["rooms"]["getById"]>;
+type RoomDetail = NonNullable<RouterOutputs["hotel"]["rooms"]["getById"]>;
 
 interface RoomDetailPanelProps {
   roomId:   number;
@@ -82,13 +82,13 @@ export function RoomDetailPanel({ roomId, basePath, onClose }: RoomDetailPanelPr
   const queryClient = useQueryClient();
 
   const { data: room, isLoading } = useQuery(
-    trpc.receptionist.rooms.getById.queryOptions({ id: roomId }),
+    trpc.hotel.rooms.getById.queryOptions({ id: roomId }),
   );
 
   const [maintenanceNote, setMaintenanceNote] = useState("");
 
   const updateServiceMode = useMutation(
-    trpc.receptionist.rooms.updateServiceMode.mutationOptions({
+    trpc.hotel.rooms.updateServiceMode.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries();
         setMaintenanceNote("");

@@ -33,6 +33,19 @@ export const createCallerFactory = t.createCallerFactory;
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
+/**
+ * Shared procedure for any authenticated staff member (manager OR receptionist).
+ * Use this for all operations that both roles can perform.
+ */
+export const protectedProcedure = t.procedure.use(({ ctx, next }) => {
+  const role = ctx.session?.user.role;
+  if (role !== ROLES.MANAGER && role !== ROLES.RECEPTIONIST) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({ ctx });
+});
+
+/** Procedure restricted to managers only. */
 export const managerProcedure = t.procedure.use(({ ctx, next }) => {
   if (ctx.session?.user.role !== ROLES.MANAGER) {
     throw new TRPCError({ code: "UNAUTHORIZED" });
@@ -40,6 +53,7 @@ export const managerProcedure = t.procedure.use(({ ctx, next }) => {
   return next({ ctx });
 });
 
+/** Procedure restricted to receptionists only. */
 export const receptionistProcedure = t.procedure.use(({ ctx, next }) => {
   if (ctx.session?.user.role !== ROLES.RECEPTIONIST) {
     throw new TRPCError({ code: "UNAUTHORIZED" });

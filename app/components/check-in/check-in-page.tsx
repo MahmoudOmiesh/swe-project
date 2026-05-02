@@ -23,10 +23,10 @@ export function CheckInPage({ basePath }: CheckInPageProps) {
   const {
     data: arrivals = [],
     isLoading: isLoadingArrivals,
-  } = useQuery(trpc.receptionist.bookings.todayArrivals.queryOptions());
+  } = useQuery(trpc.hotel.bookings.todayArrivals.queryOptions());
 
   const { data: availableServices = [] } = useQuery(
-    trpc.receptionist.bookings.availableServices.queryOptions(),
+    trpc.hotel.bookings.availableServices.queryOptions(),
   );
 
   // ── Local state ──────────────────────────────────────────────────────────────
@@ -46,10 +46,10 @@ export function CheckInPage({ basePath }: CheckInPageProps) {
 
   // ── Check-in mutation ────────────────────────────────────────────────────────
   const checkInMutation = useMutation(
-    trpc.receptionist.bookings.checkIn.mutationOptions({
+    trpc.hotel.bookings.checkIn.mutationOptions({
       onSuccess: () => {
         queryClient.invalidateQueries({
-          queryKey: trpc.receptionist.bookings.todayArrivals.queryKey(),
+          queryKey: trpc.hotel.bookings.todayArrivals.queryKey(),
         });
         setSelectedId(null);
       },

@@ -108,7 +108,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
   const [searchParams, setSearchParams] = useSearchParams();
 
   const { data: rooms = [], isLoading } = useQuery(
-    trpc.receptionist.rooms.list.queryOptions(),
+    trpc.hotel.rooms.list.queryOptions(),
   );
 
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "all">("all");

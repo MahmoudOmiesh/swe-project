@@ -9,7 +9,7 @@ import type { RouterOutputs } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import { BookingStatusBadge } from "./booking-status-badge";
 
-export type BookingDetail = NonNullable<RouterOutputs["receptionist"]["bookings"]["getById"]>;
+export type BookingDetail = NonNullable<RouterOutputs["hotel"]["bookings"]["getById"]>;
 
 // ─── Small helpers ────────────────────────────────────────────────────────────
 
@@ -180,7 +180,7 @@ function CheckoutView({
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("cash");
 
   const checkOutMutation = useMutation(
-    trpc.receptionist.bookings.checkOut.mutationOptions({
+    trpc.hotel.bookings.checkOut.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries();
         onClose();
@@ -330,7 +330,7 @@ function DetailView({
   const queryClient = useQueryClient();
 
   const updateStatus = useMutation(
-    trpc.receptionist.bookings.updateStatus.mutationOptions({
+    trpc.hotel.bookings.updateStatus.mutationOptions({
       onSuccess: () => {
         void queryClient.invalidateQueries();
         onClose();
@@ -556,7 +556,7 @@ export function BookingDetailPanel({ bookingId, onClose, onEdit }: BookingDetail
   const [view, setView] = useState<"detail" | "checkout">("detail");
 
   const { data: booking, isLoading } = useQuery(
-    trpc.receptionist.bookings.getById.queryOptions({ id: bookingId }),
+    trpc.hotel.bookings.getById.queryOptions({ id: bookingId }),
   );
 
   // Loading / not found

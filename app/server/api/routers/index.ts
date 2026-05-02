@@ -1,10 +1,10 @@
 import { router } from "@/server/api";
 import { testRouter } from "./test";
-import { receptionistRouter } from "./receptionist";
+import { hotelRouter } from "./hotel";
 
 export const appRouter = router({
   test: testRouter,
-  receptionist: receptionistRouter,
+  hotel: hotelRouter,
 });
 
 export type AppRouter = typeof appRouter;

@@ -4,7 +4,7 @@ import type { RouterOutputs } from "@/utils/trpc/react";
 import { RoomStatusBadge } from "./status-badge";
 import { roomTypeLabel } from "./mock-data";
 
-export type RoomListItem = RouterOutputs["receptionist"]["rooms"]["list"][number];
+export type RoomListItem = RouterOutputs["hotel"]["rooms"]["list"][number];
 
 interface RoomCardProps {
   room:       RoomListItem;
