@@ -1,10 +1,11 @@
 "use client";
 
 import { useState, useMemo } from "react";
+import { useQuery } from "@tanstack/react-query";
+import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import type { RoomStatus } from "@/components/dashboard/theme";
 import {
-  MOCK_ROOM_RECORDS,
   groupByFloor,
   countByStatus,
   type RoomRecord,
@@ -105,6 +106,12 @@ interface RoomsPageProps {
 }
 
 export function RoomsPage({ basePath }: RoomsPageProps) {
+  const trpc = useTRPC();
+
+  const { data: rooms = [], isLoading } = useQuery(
+    trpc.receptionist.rooms.list.queryOptions(),
+  );
+
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "all">("all");
   const [floorFilter,  setFloorFilter]  = useState<number | "all">("all");
   const [search,       setSearch]       = useState("");
@@ -112,7 +119,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
 
   // Derived: filtered rooms
   const filtered = useMemo(() => {
-    return MOCK_ROOM_RECORDS.filter((room) => {
+    return rooms.filter((room) => {
       if (statusFilter !== "all" && room.status !== statusFilter) return false;
       if (floorFilter  !== "all" && room.floor  !== floorFilter)  return false;
       if (search) {
@@ -124,13 +131,13 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
       }
       return true;
     });
-  }, [statusFilter, floorFilter, search]);
+  }, [rooms, statusFilter, floorFilter, search]);
 
   // Derived: counts and groups
-  const counts    = useMemo(() => countByStatus(MOCK_ROOM_RECORDS), []);
+  const counts    = useMemo(() => countByStatus(rooms), [rooms]);
   const byFloor   = useMemo(() => groupByFloor(filtered), [filtered]);
   const floors    = useMemo(() => [...byFloor.keys()].sort(), [byFloor]);
-  const allFloors = [...new Set(MOCK_ROOM_RECORDS.map((r) => r.floor))].sort();
+  const allFloors = [...new Set(rooms.map((r) => r.floor))].sort();
 
   function handleSelect(room: RoomRecord) {
     setSelected((prev) => (prev?.id === room.id ? null : room));
@@ -148,12 +155,6 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
         >
           Rooms
         </h1>
-        <button
-          className="rounded-full px-[14px] py-[6px] text-[11px] font-medium transition-opacity hover:opacity-80"
-          style={{ background: colors.gold, color: "#fff", border: "none", fontFamily: "inherit", cursor: "pointer" }}
-        >
-          + Add room
-        </button>
       </header>
 
       {/* Body */}
@@ -163,7 +164,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
 
           {/* Summary bar */}
           <div className="grid grid-cols-4 gap-[9px]">
-            <SummaryCard label="Total rooms"  value={MOCK_ROOM_RECORDS.length} />
+            <SummaryCard label="Total rooms"  value={rooms.length} />
             <SummaryCard label="Occupied"     value={counts.occupied}    valueColor={colors.status.occupied.text}    />
             <SummaryCard label="Available"    value={counts.available}   valueColor={colors.status.available.text}   />
             <SummaryCard label="Cleaning"     value={counts.cleaning}    valueColor={colors.status.cleaning.text}    />
@@ -211,7 +212,14 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
           </div>
 
           {/* Room grid by floor */}
-          {floors.length === 0 ? (
+          {isLoading ? (
+            <div
+              className="mt-8 text-center text-[12px]"
+              style={{ color: colors.textMuted }}
+            >
+              Loading rooms…
+            </div>
+          ) : floors.length === 0 ? (
             <div
               className="mt-8 text-center text-[12px]"
               style={{ color: colors.textMuted }}
@@ -220,12 +228,12 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
             </div>
           ) : (
             floors.map((floor) => {
-              const rooms = byFloor.get(floor)!;
+              const floorRooms = byFloor.get(floor)!;
               return (
                 <div key={floor}>
-                  <FloorHeader floor={floor} count={rooms.length} />
+                  <FloorHeader floor={floor} count={floorRooms.length} />
                   <div className="grid grid-cols-4 gap-[9px]">
-                    {rooms.map((room) => (
+                    {floorRooms.map((room) => (
                       <RoomCard
                         key={room.id}
                         room={room}

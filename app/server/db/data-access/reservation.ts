@@ -1,4 +1,4 @@
-import { eq, and, not, lt, gt, count } from "drizzle-orm";
+import { eq, and, not, lt, gt, count, isNull } from "drizzle-orm";
 import { db } from "@/server/db";
 import {
   reservations,
@@ -78,7 +78,7 @@ export async function getAvailableRooms(checkIn: Date, checkOut: Date) {
   const allRooms = await db
     .select()
     .from(rooms)
-    .where(eq(rooms.status, "available"));
+    .where(isNull(rooms.serviceMode));
 
   return allRooms.filter((r) => !occupiedIds.has(r.id));
 }
