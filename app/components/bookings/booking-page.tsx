@@ -176,9 +176,9 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
       {/* Body */}
       <div className="hms-shell flex flex-1 overflow-hidden">
         {/* Left — table */}
-        <div className="flex flex-1 flex-col gap-3 overflow-y-auto p-[18px]">
+        <div className="flex min-h-0 flex-1 flex-col gap-3 overflow-hidden p-[18px]">
           {/* Summary */}
-          <div className="grid grid-cols-4 gap-[9px]">
+          <div className="shrink-0 grid grid-cols-4 gap-[9px]">
             <SummaryCard label="Total"       value={stats?.total ?? 0}                                               />
             <SummaryCard label="Checked In"  value={stats?.checkedIn ?? 0}  valueColor={colors.status.available.text}   />
             <SummaryCard label="New"         value={stats?.new ?? 0}        valueColor={colors.status.occupied.text}    />
@@ -186,7 +186,7 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
           </div>
 
           {/* Filters */}
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="shrink-0 flex flex-wrap items-center gap-2">
             <input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
@@ -211,12 +211,12 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
 
           {/* Table */}
           <div
-            className="overflow-hidden rounded-[10px]"
+            className="flex min-h-0 flex-1 flex-col overflow-hidden rounded-[10px]"
             style={{ background: colors.cream2, border: `0.5px solid ${colors.border2}` }}
           >
             {/* Table header */}
             <div
-              className="grid px-[14px] py-[9px]"
+              className="shrink-0 grid px-[14px] py-[9px]"
               style={{
                 gridTemplateColumns: COL_WIDTHS,
                 borderBottom:        `0.5px solid ${colors.border2}`,
@@ -235,30 +235,32 @@ export function BookingsPage({ basePath }: BookingsPageProps) {
             </div>
 
             {/* Rows */}
-            {isLoadingList ? (
-              <div
-                className="py-8 text-center text-[12px]"
-                style={{ color: colors.textMuted }}
-              >
-                Loading bookings…
-              </div>
-            ) : bookings.length === 0 ? (
-              <div
-                className="py-8 text-center text-[12px]"
-                style={{ color: colors.textMuted }}
-              >
-                No bookings match your filters.
-              </div>
-            ) : (
-              bookings.map((booking) => (
-                <BookingRow
-                  key={booking.id}
-                  booking={booking}
-                  isSelected={selectedId === booking.id}
-                  onClick={handleSelectBooking}
-                />
-              ))
-            )}
+            <div className="flex-1 overflow-y-auto">
+              {isLoadingList ? (
+                <div
+                  className="py-8 text-center text-[12px]"
+                  style={{ color: colors.textMuted }}
+                >
+                  Loading bookings…
+                </div>
+              ) : bookings.length === 0 ? (
+                <div
+                  className="py-8 text-center text-[12px]"
+                  style={{ color: colors.textMuted }}
+                >
+                  No bookings match your filters.
+                </div>
+              ) : (
+                bookings.map((booking) => (
+                  <BookingRow
+                    key={booking.id}
+                    booking={booking}
+                    isSelected={selectedId === booking.id}
+                    onClick={handleSelectBooking}
+                  />
+                ))
+              )}
+            </div>
           </div>
         </div>
 
