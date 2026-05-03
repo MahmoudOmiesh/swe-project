@@ -17,6 +17,13 @@ export async function loader({ request }: Route.LoaderArgs) {
   return { user: session.user };
 }
 
+// Prevent the layout loader from re-running on every child route navigation.
+// The auth check only needs to happen once when the layout first loads —
+// child routes have no loaders and fetch data client-side via tRPC.
+export function shouldRevalidate() {
+  return false;
+}
+
 export default function ManagerLayout() {
   const { user } = useLoaderData<typeof loader>();
 

@@ -52,6 +52,13 @@ export async function getRoomById(id: number) {
   });
 }
 
+/** Get a single room by its room number. */
+export async function getRoomByNumber(number: string) {
+  return db.query.rooms.findFirst({
+    where: eq(rooms.number, number),
+  });
+}
+
 /** Update a room's service mode (cleaning, maintenance, or null to clear). */
 export async function updateRoomServiceMode(
   id: number,
