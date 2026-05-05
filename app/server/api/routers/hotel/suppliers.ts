@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "@/server/api";
+import { financeProcedure, protectedProcedure, router } from "@/server/api";
 import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 import {
   listSuppliers,
@@ -62,7 +62,7 @@ function deriveStatus(orders: { status: string }[]) {
 
 export const suppliersRouter = router({
   /** List all suppliers. */
-  list: protectedProcedure.query(async () => {
+  list: financeProcedure.query(async () => {
     const rows = await listSuppliers();
     return rows.map((s) => {
       const avatar = avatarColors(s.name);
@@ -92,7 +92,7 @@ export const suppliersRouter = router({
   }),
 
   /** Get a single supplier by ID. */
-  getById: protectedProcedure
+  getById: financeProcedure
     .input(z.object({ id: z.number() }))
     .query(async ({ input }) => {
       const s = await getSupplierById(input.id);

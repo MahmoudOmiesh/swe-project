@@ -1,6 +1,6 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
-import { protectedProcedure, router } from "@/server/api";
+import { financeProcedure, protectedProcedure, router } from "@/server/api";
 import { calendarDateStringSchema } from "@/lib/calendar-date";
 import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 import {
@@ -449,7 +449,7 @@ export const bookingsRouter = router({
   }),
 
   /** List all bills with line-item breakdowns. */
-  bills: protectedProcedure.query(async () => {
+  bills: financeProcedure.query(async () => {
     const rows = await listBills();
     return rows.map((row) => {
       const res = row.reservation;
@@ -499,7 +499,7 @@ export const bookingsRouter = router({
   }),
 
   /** Billing summary stats. */
-  billingStats: protectedProcedure.query(async () => {
+  billingStats: financeProcedure.query(async () => {
     const stats = await getBillingStats();
     return stats;
   }),

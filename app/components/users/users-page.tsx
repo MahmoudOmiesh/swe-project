@@ -9,11 +9,15 @@ import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import { ROLES } from "@/lib/roles";
 
-type AssignableRole = typeof ROLES.RECEPTIONIST | typeof ROLES.HOUSEKEEPING;
+type AssignableRole =
+  | typeof ROLES.RECEPTIONIST
+  | typeof ROLES.HOUSEKEEPING
+  | typeof ROLES.ACCOUNTANT;
 
 const ROLE_OPTIONS: { value: AssignableRole; label: string }[] = [
   { value: ROLES.RECEPTIONIST, label: "Reception" },
   { value: ROLES.HOUSEKEEPING, label: "Housekeeping" },
+  { value: ROLES.ACCOUNTANT, label: "Accountant" },
 ];
 
 function roleBadgeColors(role: string) {
@@ -32,6 +36,11 @@ function roleBadgeColors(role: string) {
       bg: colors.status.available.bg,
       text: colors.status.available.text,
     };
+  if (role === ROLES.ACCOUNTANT)
+    return {
+      bg: colors.status.maintenance.bg,
+      text: colors.status.maintenance.text,
+    };
   return {
     bg: colors.cream2,
     text: colors.textSub,
@@ -42,6 +51,7 @@ function prettyRole(role: string) {
   if (role === ROLES.RECEPTIONIST) return "Reception";
   if (role === ROLES.HOUSEKEEPING) return "Housekeeping";
   if (role === ROLES.MANAGER) return "Manager";
+  if (role === ROLES.ACCOUNTANT) return "Accountant";
   return role;
 }
 
@@ -231,7 +241,8 @@ export function UsersPage() {
                           <select
                             value={
                               u.role === ROLES.RECEPTIONIST ||
-                              u.role === ROLES.HOUSEKEEPING
+                              u.role === ROLES.HOUSEKEEPING ||
+                              u.role === ROLES.ACCOUNTANT
                                 ? u.role
                                 : ""
                             }

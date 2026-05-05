@@ -81,6 +81,23 @@ const housekeepingNav: NavSection[] = [
   },
 ];
 
+const accountantNav: NavSection[] = [
+  {
+    label: "Overview",
+    items: [
+      { label: "Dashboard", href: "/accountant", color: "#B8965A" },
+    ],
+  },
+  {
+    label: "Finance",
+    items: [
+      { label: "Billing",  href: "/accountant/billing",   color: "#AFA9EC" },
+      { label: "Reports",  href: "/accountant/reports",   color: "#F4C0D1" },
+      { label: "Expenses", href: "/accountant/suppliers", color: "#FAC775" },
+    ],
+  },
+];
+
 interface SidebarProps {
   user: User;
   role: Role;
@@ -94,7 +111,9 @@ export function Sidebar({ user, role }: SidebarProps) {
       ? managerNav
       : role === "receptionist"
         ? receptionistNav
-        : housekeepingNav;
+        : role === "accountant"
+          ? accountantNav
+          : housekeepingNav;
   const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
 
   async function handleSignOut() {
@@ -129,6 +148,7 @@ export function Sidebar({ user, role }: SidebarProps) {
                 (item.href !== "/manager" &&
                   item.href !== "/receptionist" &&
                   item.href !== "/housekeeping" &&
+                  item.href !== "/accountant" &&
                   location.pathname.startsWith(item.href));
               return (
                 <Link

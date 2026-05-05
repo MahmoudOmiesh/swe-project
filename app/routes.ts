@@ -47,4 +47,13 @@ export default [
       index("routes/housekeeping/index.tsx"),
     ]),
   ]),
+
+  ...prefix("accountant", [
+    layout("routes/accountant/layout.tsx", [
+      index("routes/accountant/index.tsx"),
+      route("billing", "routes/accountant/billing.tsx"),
+      route("reports", "routes/accountant/reports.tsx"),
+      route("suppliers", "routes/accountant/suppliers.tsx"),
+    ]),
+  ]),
 ] satisfies RouteConfig;

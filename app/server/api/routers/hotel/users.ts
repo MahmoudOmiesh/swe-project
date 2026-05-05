@@ -5,7 +5,11 @@ import { ROLES } from "@/lib/roles";
 import { listUsers, updateUserRole } from "@/server/db/data-access/users";
 
 /** Roles a manager is allowed to assign through this UI. */
-const ASSIGNABLE_ROLES = [ROLES.RECEPTIONIST, ROLES.HOUSEKEEPING] as const;
+const ASSIGNABLE_ROLES = [
+  ROLES.RECEPTIONIST,
+  ROLES.HOUSEKEEPING,
+  ROLES.ACCOUNTANT,
+] as const;
 
 export const usersRouter = router({
   /** List every user with their current role. Manager only. */

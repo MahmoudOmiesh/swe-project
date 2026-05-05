@@ -71,3 +71,28 @@ export const housekeepingProcedure = t.procedure.use(({ ctx, next }) => {
   }
   return next({ ctx: { ...ctx, session: ctx.session } });
 });
+
+/** Procedure restricted to accountants only. */
+export const accountantProcedure = t.procedure.use(({ ctx, next }) => {
+  if (ctx.session?.user.role !== ROLES.ACCOUNTANT) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({ ctx });
+});
+
+/**
+ * Read-only finance procedure — accessible to managers and accountants.
+ * Used for billing, reports, and supplier-listing endpoints that the
+ * accountant role needs for visibility (no write access).
+ */
+export const financeProcedure = t.procedure.use(({ ctx, next }) => {
+  const role = ctx.session?.user.role;
+  if (
+    role !== ROLES.MANAGER &&
+    role !== ROLES.RECEPTIONIST &&
+    role !== ROLES.ACCOUNTANT
+  ) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({ ctx });
+});
