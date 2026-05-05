@@ -40,6 +40,12 @@ const managerNav: NavSection[] = [
       { label: "Suppliers", href: "/manager/suppliers", color: "#FAC775" },
     ],
   },
+  {
+    label: "Admin",
+    items: [
+      { label: "Users", href: "/manager/users", color: "#85B7EB" },
+    ],
+  },
 ];
 
 const receptionistNav: NavSection[] = [

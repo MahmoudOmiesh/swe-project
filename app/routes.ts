@@ -24,6 +24,7 @@ export default [
       route("billing", "routes/manager/billing.tsx"),
       route("reports", "routes/manager/reports.tsx"),
       route("suppliers", "routes/manager/suppliers.tsx"),
+      route("users", "routes/manager/users.tsx"),
     ]),
   ]),
 

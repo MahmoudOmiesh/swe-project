@@ -5,6 +5,7 @@ import { dashboardRouter } from "./dashboard";
 import { housekeepingRouter } from "./housekeeping";
 import { suppliersRouter } from "./suppliers";
 import { reportsRouter } from "./reports";
+import { usersRouter } from "./users";
 
 export const hotelRouter = router({
   bookings: bookingsRouter,
@@ -13,4 +14,5 @@ export const hotelRouter = router({
   housekeeping: housekeepingRouter,
   suppliers: suppliersRouter,
   reports: reportsRouter,
+  users: usersRouter,
 });
