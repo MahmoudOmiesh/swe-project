@@ -19,6 +19,10 @@ export async function loader({ request }: Route.LoaderArgs) {
   if (session.user.role === ROLES.RECEPTIONIST) {
     throw redirect("/receptionist");
   }
+
+  if (session.user.role === ROLES.HOUSEKEEPING) {
+    throw redirect("/housekeeping");
+  }
 }
 
 export default function Home() {

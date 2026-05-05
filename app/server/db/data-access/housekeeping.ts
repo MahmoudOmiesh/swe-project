@@ -1,43 +1,48 @@
-import { eq, and, gte, sql } from "drizzle-orm";
+import { eq, and, gte, sql, asc } from "drizzle-orm";
 import { db } from "@/server/db";
-import {
-  housekeepingTasks,
-  housekeepingStaff,
-} from "@/server/db/schema";
+import { housekeepingTasks, user } from "@/server/db/schema";
+import { ROLES } from "@/lib/roles";
 
-// ─── Staff ──────────────────────────────────────────────────────────────────
+// ─── Staff (users with `housekeeping` role) ────────────────────────────────
 
-/** List all housekeeping staff. */
+/** List all users with the housekeeping role. */
 export async function listStaff() {
-  return db.query.housekeepingStaff.findMany({
-    orderBy: (s, { asc }) => [asc(s.name)],
-  });
+  return db
+    .select({
+      id: user.id,
+      name: user.name,
+      email: user.email,
+    })
+    .from(user)
+    .where(eq(user.role, ROLES.HOUSEKEEPING))
+    .orderBy(asc(user.name));
 }
 
-/** List staff with today's task progress (assigned/done counts). */
+/** List housekeeping users with today's task progress (assigned/done counts). */
 export async function listStaffWithProgress() {
   const startOfDay = new Date();
   startOfDay.setHours(0, 0, 0, 0);
 
   return db
     .select({
-      id: housekeepingStaff.id,
-      name: housekeepingStaff.name,
+      id: user.id,
+      name: user.name,
       total: sql<number>`count(${housekeepingTasks.id})`.mapWith(Number),
       done: sql<number>`count(*) filter (where ${housekeepingTasks.status} = 'done')`.mapWith(
         Number,
       ),
     })
-    .from(housekeepingStaff)
+    .from(user)
     .leftJoin(
       housekeepingTasks,
       and(
-        eq(housekeepingTasks.assignedToId, housekeepingStaff.id),
+        eq(housekeepingTasks.assignedToId, user.id),
         gte(housekeepingTasks.createdAt, startOfDay),
       ),
     )
-    .groupBy(housekeepingStaff.id, housekeepingStaff.name)
-    .orderBy(housekeepingStaff.name);
+    .where(eq(user.role, ROLES.HOUSEKEEPING))
+    .groupBy(user.id, user.name)
+    .orderBy(user.name);
 }
 
 // ─── Tasks ──────────────────────────────────────────────────────────────────
@@ -58,6 +63,29 @@ export async function listTodayTasks() {
       },
     },
     orderBy: (tasks, { asc }) => [asc(tasks.createdAt)],
+  });
+}
+
+/** List tasks assigned to a specific housekeeping user (today's tasks only). */
+export async function listMyTasks(userId: string) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  return db.query.housekeepingTasks.findMany({
+    where: and(
+      eq(housekeepingTasks.assignedToId, userId),
+      gte(housekeepingTasks.createdAt, startOfDay),
+    ),
+    with: {
+      room: {
+        columns: { id: true, number: true, type: true, floor: true },
+      },
+    },
+    orderBy: (tasks, { asc, desc }) => [
+      asc(tasks.status),
+      desc(tasks.priority),
+      asc(tasks.createdAt),
+    ],
   });
 }
 
@@ -102,6 +130,32 @@ export async function getHousekeepingMetrics() {
   return rows[0] ?? { toClean: 0, cleanedToday: 0, maintenance: 0, urgent: 0 };
 }
 
+/** Per-user metrics for a single housekeeper (today). */
+export async function getMyMetrics(userId: string) {
+  const startOfDay = new Date();
+  startOfDay.setHours(0, 0, 0, 0);
+
+  const rows = await db
+    .select({
+      assigned: sql<number>`count(*) filter (where ${housekeepingTasks.createdAt} >= ${startOfDay})`.mapWith(
+        Number,
+      ),
+      pending: sql<number>`count(*) filter (where ${housekeepingTasks.status} = 'pending' and ${housekeepingTasks.createdAt} >= ${startOfDay})`.mapWith(
+        Number,
+      ),
+      inProgress: sql<number>`count(*) filter (where ${housekeepingTasks.status} = 'in_progress' and ${housekeepingTasks.createdAt} >= ${startOfDay})`.mapWith(
+        Number,
+      ),
+      done: sql<number>`count(*) filter (where ${housekeepingTasks.status} = 'done' and ${housekeepingTasks.createdAt} >= ${startOfDay})`.mapWith(
+        Number,
+      ),
+    })
+    .from(housekeepingTasks)
+    .where(eq(housekeepingTasks.assignedToId, userId));
+
+  return rows[0] ?? { assigned: 0, pending: 0, inProgress: 0, done: 0 };
+}
+
 /** Create a new housekeeping task (cleaning or maintenance). */
 export async function createTask(input: {
   roomId: number;
@@ -109,7 +163,7 @@ export async function createTask(input: {
   title: string;
   priority?: "low" | "medium" | "high";
   notes?: string;
-  assignedToId?: number;
+  assignedToId: string;
 }) {
   const [task] = await db
     .insert(housekeepingTasks)
@@ -135,6 +189,26 @@ export async function updateTaskStatus(
     .update(housekeepingTasks)
     .set({ status })
     .where(eq(housekeepingTasks.id, id))
+    .returning();
+
+  return updated;
+}
+
+/** Update task status only if assigned to the given user. */
+export async function updateMyTaskStatus(
+  id: number,
+  userId: string,
+  status: "pending" | "in_progress" | "done",
+) {
+  const [updated] = await db
+    .update(housekeepingTasks)
+    .set({ status })
+    .where(
+      and(
+        eq(housekeepingTasks.id, id),
+        eq(housekeepingTasks.assignedToId, userId),
+      ),
+    )
     .returning();
 
   return updated;

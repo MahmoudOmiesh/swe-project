@@ -60,3 +60,14 @@ export const receptionistProcedure = t.procedure.use(({ ctx, next }) => {
   }
   return next({ ctx });
 });
+
+/**
+ * Procedure for the housekeeping role. Re-exposes the session as
+ * non-nullable so handlers can access `ctx.session.user.id` directly.
+ */
+export const housekeepingProcedure = t.procedure.use(({ ctx, next }) => {
+  if (ctx.session?.user.role !== ROLES.HOUSEKEEPING) {
+    throw new TRPCError({ code: "UNAUTHORIZED" });
+  }
+  return next({ ctx: { ...ctx, session: ctx.session } });
+});

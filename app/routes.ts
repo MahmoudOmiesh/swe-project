@@ -40,4 +40,10 @@ export default [
       route("suppliers", "routes/receptionist/suppliers.tsx"),
     ]),
   ]),
+
+  ...prefix("housekeeping", [
+    layout("routes/housekeeping/layout.tsx", [
+      index("routes/housekeeping/index.tsx"),
+    ]),
+  ]),
 ] satisfies RouteConfig;

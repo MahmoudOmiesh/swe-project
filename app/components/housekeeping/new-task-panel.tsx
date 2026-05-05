@@ -108,7 +108,7 @@ export function NewTaskPanel({ onClose }: NewTaskPanelProps) {
       title: data.title,
       priority: data.priority,
       notes: data.notes || undefined,
-      assignedToId: data.assignedToId ? Number(data.assignedToId) : undefined,
+      assignedToId: data.assignedToId,
     });
   }
 
@@ -276,16 +276,16 @@ export function NewTaskPanel({ onClose }: NewTaskPanelProps) {
 
             {/* Staff */}
             <div>
-              <FormLabel>Assign to (optional)</FormLabel>
+              <FormLabel>Assign to</FormLabel>
               <Controller
                 name="assignedToId"
                 control={control}
                 render={({ field }) => (
-                  <Select
-                    value={field.value}
-                    onValueChange={field.onChange}
-                  >
-                    <SelectTrigger className="h-6 w-full rounded-lg text-[11px]">
+                  <Select value={field.value} onValueChange={field.onChange}>
+                    <SelectTrigger
+                      className="h-6 w-full rounded-lg text-[11px]"
+                      aria-invalid={!!errors.assignedToId}
+                    >
                       <SelectValue
                         placeholder={
                           staffLoading ? "Loading staff…" : "Select staff"
@@ -310,6 +310,7 @@ export function NewTaskPanel({ onClose }: NewTaskPanelProps) {
                   </Select>
                 )}
               />
+              <ErrorMsg message={errors.assignedToId?.message} />
             </div>
           </div>
         </div>

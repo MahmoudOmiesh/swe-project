@@ -20,7 +20,6 @@ TRUNCATE
   reservations,
   guests,
   housekeeping_tasks,
-  housekeeping_staff,
   supplier_orders,
   suppliers,
   services,
@@ -34,7 +33,6 @@ ALTER SEQUENCE reservations_id_seq       RESTART WITH 1;
 ALTER SEQUENCE bills_id_seq              RESTART WITH 1;
 ALTER SEQUENCE services_id_seq           RESTART WITH 1;
 ALTER SEQUENCE reservation_services_id_seq RESTART WITH 1;
-ALTER SEQUENCE housekeeping_staff_id_seq RESTART WITH 1;
 ALTER SEQUENCE housekeeping_tasks_id_seq RESTART WITH 1;
 ALTER SEQUENCE suppliers_id_seq          RESTART WITH 1;
 ALTER SEQUENCE supplier_orders_id_seq    RESTART WITH 1;
@@ -343,50 +341,42 @@ INSERT INTO bills (reservation_id, tax, extra_services, discount, total_amount, 
 VALUES (12, 222.60, 240.00, 0, 1812.60, 'card', NOW() - INTERVAL '1 day');
 
 -- =============================================================================
--- 7. HOUSEKEEPING STAFF  (5 staff members)
+-- 7. HOUSEKEEPING TASKS  (today's tasks + some open maintenance)
 -- =============================================================================
-
-INSERT INTO housekeeping_staff (name, phone) VALUES
-  ('Fatima Mohamed',  '+20 100 111 2222'),
-  ('Hassan Ahmed',    '+20 100 333 4444'),
-  ('Zainab Ibrahim',  '+20 100 555 6666'),
-  ('Karim Saleh',     '+20 100 777 8888'),
-  ('Mariam Youssef',  '+20 100 999 0000');
-
--- =============================================================================
--- 8. HOUSEKEEPING TASKS  (today's tasks + some open maintenance)
--- =============================================================================
--- Use rooms that make sense (recently checked-out, in cleaning mode, etc.)
+-- Tasks are assigned to users with the `housekeeping` role.
+-- Sign-up housekeeping users via the app, then run a separate UPDATE to
+-- assign them — the seed leaves assigned_to_id NULL so it doesn't depend
+-- on auth users existing.
 
 -- Today's cleaning tasks (various statuses — shows on today's task list)
 INSERT INTO housekeeping_tasks (room_id, assigned_to_id, type, title, priority, status, notes, created_at) VALUES
   -- Room 104 (cleaning mode) — done
-  (4,  1, 'cleaning', 'Full room cleaning',       'medium', 'done',        'Guest checked out this morning',     NOW() - INTERVAL '4 hours'),
+  (4,  NULL, 'cleaning', 'Full room cleaning',       'medium', 'done',        'Guest checked out this morning',     NOW() - INTERVAL '4 hours'),
   -- Room 204 (cleaning mode) — in progress
-  (12, 2, 'cleaning', 'Full room cleaning',       'medium', 'in_progress', NULL,                                 NOW() - INTERVAL '2 hours'),
+  (12, NULL, 'cleaning', 'Full room cleaning',       'medium', 'in_progress', NULL,                                 NOW() - INTERVAL '2 hours'),
   -- Room 306 (cleaning mode) — pending
-  (22, 3, 'cleaning', 'Full room cleaning',       'medium', 'pending',     NULL,                                 NOW() - INTERVAL '1 hour'),
+  (22, NULL, 'cleaning', 'Full room cleaning',       'medium', 'pending',     NULL,                                 NOW() - INTERVAL '1 hour'),
   -- Room 102 (recently freed) — done
-  (2,  1, 'cleaning', 'Turnover cleaning',        'high',   'done',        'Quick turnaround needed',            NOW() - INTERVAL '5 hours'),
+  (2,  NULL, 'cleaning', 'Turnover cleaning',        'high',   'done',        'Quick turnaround needed',            NOW() - INTERVAL '5 hours'),
   -- Room 107 (recently freed) — done
-  (7,  4, 'cleaning', 'Turnover cleaning',        'low',    'done',        NULL,                                 NOW() - INTERVAL '6 hours'),
+  (7,  NULL, 'cleaning', 'Turnover cleaning',        'low',    'done',        NULL,                                 NOW() - INTERVAL '6 hours'),
   -- Room 301 (recently freed) — in progress
-  (17, 2, 'cleaning', 'Deep clean + restock',     'high',   'in_progress', 'Guest left late, extra cleaning',    NOW() - INTERVAL '1 hour'),
+  (17, NULL, 'cleaning', 'Deep clean + restock',     'high',   'in_progress', 'Guest left late, extra cleaning',    NOW() - INTERVAL '1 hour'),
   -- Room 205 (recently freed) — pending, unassigned
-  (13, NULL, 'cleaning', 'Standard turnover',     'medium', 'pending',     NULL,                                 NOW() - INTERVAL '30 minutes'),
+  (13, NULL, 'cleaning', 'Standard turnover',        'medium', 'pending',     NULL,                                 NOW() - INTERVAL '30 minutes'),
   -- Room 302 (recently freed) — pending
-  (18, 5, 'cleaning', 'Turnover cleaning',        'medium', 'pending',     NULL,                                 NOW() - INTERVAL '45 minutes');
+  (18, NULL, 'cleaning', 'Turnover cleaning',        'medium', 'pending',     NULL,                                 NOW() - INTERVAL '45 minutes');
 
 -- Maintenance tasks (some today, some older — shows in maintenance issues)
 INSERT INTO housekeeping_tasks (room_id, assigned_to_id, type, title, priority, status, notes, created_at) VALUES
   -- Room 303 (maintenance mode) — in progress
-  (19, 4, 'maintenance', 'Fix plumbing leak',        'high',   'in_progress', 'Plumber scheduled, parts ordered',  NOW() - INTERVAL '2 days'),
+  (19, NULL, 'maintenance', 'Fix plumbing leak',        'high',   'in_progress', 'Plumber scheduled, parts ordered',  NOW() - INTERVAL '2 days'),
   -- Room 108 — pending maintenance (AC)
-  (8,  NULL, 'maintenance', 'AC unit making noise',  'medium', 'pending',     'Guest in B5 reported intermittent rattling', NOW() - INTERVAL '6 hours'),
+  (8,  NULL, 'maintenance', 'AC unit making noise',     'medium', 'pending',     'Guest in B5 reported intermittent rattling', NOW() - INTERVAL '6 hours'),
   -- Room 206 — older maintenance, done
-  (14, 3, 'maintenance', 'Replace bathroom faucet',  'low',    'done',        'Replaced with new fixture',         NOW() - INTERVAL '3 days'),
+  (14, NULL, 'maintenance', 'Replace bathroom faucet',  'low',    'done',        'Replaced with new fixture',         NOW() - INTERVAL '3 days'),
   -- Room 308 — pending maintenance
-  (24, NULL, 'maintenance', 'Window seal damaged',    'medium', 'pending',     'Draft coming through, needs resealing', NOW() - INTERVAL '1 day');
+  (24, NULL, 'maintenance', 'Window seal damaged',      'medium', 'pending',     'Draft coming through, needs resealing', NOW() - INTERVAL '1 day');
 
 -- =============================================================================
 -- 9. SUPPLIERS  (5 suppliers)
@@ -440,7 +430,6 @@ COMMIT;
 -- SELECT 'bills'              AS tbl, count(*) FROM bills;
 -- SELECT 'services'           AS tbl, count(*) FROM services;
 -- SELECT 'reservation_svcs'   AS tbl, count(*) FROM reservation_services;
--- SELECT 'hk_staff'           AS tbl, count(*) FROM housekeeping_staff;
 -- SELECT 'hk_tasks'           AS tbl, count(*) FROM housekeeping_tasks;
 -- SELECT 'suppliers'          AS tbl, count(*) FROM suppliers;
 -- SELECT 'supplier_orders'    AS tbl, count(*) FROM supplier_orders;

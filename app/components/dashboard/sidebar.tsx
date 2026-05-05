@@ -1,5 +1,7 @@
-import { Link, useLocation } from "react-router";
-import type { User } from "@/lib/auth-client";
+import { Link, useLocation, useNavigate } from "react-router";
+import { LogOut } from "lucide-react";
+import { toast } from "sonner";
+import { authClient, type User } from "@/lib/auth-client";
 import type { Role } from "@/lib/roles";
 
 interface NavItem {
@@ -64,6 +66,15 @@ const receptionistNav: NavSection[] = [
   },
 ];
 
+const housekeepingNav: NavSection[] = [
+  {
+    label: "Today",
+    items: [
+      { label: "My tasks", href: "/housekeeping", color: "#C0DD97" },
+    ],
+  },
+];
+
 interface SidebarProps {
   user: User;
   role: Role;
@@ -71,8 +82,23 @@ interface SidebarProps {
 
 export function Sidebar({ user, role }: SidebarProps) {
   const location = useLocation();
-  const nav = role === "manager" ? managerNav : receptionistNav;
+  const navigate = useNavigate();
+  const nav =
+    role === "manager"
+      ? managerNav
+      : role === "receptionist"
+        ? receptionistNav
+        : housekeepingNav;
   const initials = user.name.split(" ").map((n) => n[0]).join("").toUpperCase().slice(0, 2);
+
+  async function handleSignOut() {
+    try {
+      await authClient.signOut();
+      navigate("/login");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to sign out");
+    }
+  }
 
   return (
     <aside className="hms-sidebar flex h-screen w-[190px] flex-shrink-0 flex-col">
@@ -94,7 +120,10 @@ export function Sidebar({ user, role }: SidebarProps) {
             {section.items.map((item) => {
               const isActive =
                 location.pathname === item.href ||
-                (item.href !== "/manager" && item.href !== "/receptionist" && location.pathname.startsWith(item.href));
+                (item.href !== "/manager" &&
+                  item.href !== "/receptionist" &&
+                  item.href !== "/housekeeping" &&
+                  location.pathname.startsWith(item.href));
               return (
                 <Link
                   key={item.href}
@@ -133,10 +162,40 @@ export function Sidebar({ user, role }: SidebarProps) {
         <div style={{ width: 28, height: 28, borderRadius: "50%", background: "#B8965A", display: "flex", alignItems: "center", justifyContent: "center", fontSize: 10, fontWeight: 500, color: "#1A1612", flexShrink: 0 }}>
           {initials}
         </div>
-        <div>
-          <div style={{ fontSize: 11, color: "#C8BDB0" }}>{user.name}</div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 11, color: "#C8BDB0", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{user.name}</div>
           <div style={{ fontSize: 9, color: "#9C8B78", textTransform: "capitalize" }}>{role}</div>
         </div>
+        <button
+          type="button"
+          onClick={handleSignOut}
+          aria-label="Sign out"
+          title="Sign out"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            width: 26,
+            height: 26,
+            borderRadius: 4,
+            background: "transparent",
+            border: "0.5px solid rgba(184,150,90,0.22)",
+            color: "#C8BDB0",
+            cursor: "pointer",
+            flexShrink: 0,
+            transition: "background 0.15s, color 0.15s",
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = "rgba(184,150,90,0.14)";
+            e.currentTarget.style.color = "#F5EDD8";
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = "transparent";
+            e.currentTarget.style.color = "#C8BDB0";
+          }}
+        >
+          <LogOut size={13} />
+        </button>
       </div>
     </aside>
   );

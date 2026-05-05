@@ -14,9 +14,10 @@ import {
   rooms,
   bills,
   housekeepingTasks,
-  housekeepingStaff,
+  user,
   supplierOrders,
 } from "@/server/db/schema";
+import { ROLES } from "@/lib/roles";
 
 export type TimeRange = "week" | "month";
 
@@ -246,8 +247,8 @@ export async function getReportData(timeRange: TimeRange) {
           lt(supplierOrders.createdAt, end),
         ),
       ),
-    // Total housekeeping staff
-    db.select({ c: count() }).from(housekeepingStaff),
+    // Total housekeeping staff (users with the housekeeping role)
+    db.select({ c: count() }).from(user).where(eq(user.role, ROLES.HOUSEKEEPING)),
   ]);
 
   // ── KPIs ─────────────────────────────────────────────────────────────

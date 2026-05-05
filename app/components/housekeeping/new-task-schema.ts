@@ -11,7 +11,7 @@ export const newTaskSchema = z.object({
     .max(100, "Title is too long"),
   priority: z.enum(["low", "medium", "high"]),
   notes: z.string().optional(),
-  assignedToId: z.string().optional(),
+  assignedToId: z.string().min(1, "Please assign this task to a staff member"),
 });
 
 export type NewTaskFormValues = z.infer<typeof newTaskSchema>;

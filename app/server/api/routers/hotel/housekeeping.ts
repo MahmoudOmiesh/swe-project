@@ -158,7 +158,7 @@ export const housekeepingRouter = router({
       const avatar = avatarColors(r.name);
       const progress = r.total > 0 ? Math.round((r.done / r.total) * 100) : 0;
       return {
-        id: String(r.id),
+        id: r.id,
         name: r.name,
         initials: initials(r.name),
         avatarBg: avatar.bg,
@@ -179,7 +179,9 @@ export const housekeepingRouter = router({
         title: z.string().min(1, "Title is required"),
         priority: z.enum(["low", "medium", "high"]).default("medium"),
         notes: z.string().optional(),
-        assignedToId: z.number().optional(),
+        assignedToId: z
+          .string()
+          .min(1, "Please assign this task to a staff member"),
       }),
     )
     .mutation(async ({ input }) => {
