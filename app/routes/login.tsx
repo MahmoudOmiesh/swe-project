@@ -4,6 +4,7 @@ import { SignUpForm } from "@/components/auth/sign-up-form";
 import { redirect } from "react-router";
 import type { Route } from "./+types/login";
 import { auth } from "@/lib/auth.server";
+import { colors } from "@/components/dashboard/theme";
 
 export async function loader({ request }: Route.LoaderArgs) {
   const session = await auth.api.getSession({
@@ -21,11 +22,11 @@ export default function Auth() {
   return (
     <div
       className="flex min-h-screen flex-col items-center justify-center gap-4"
-      style={{ background: "oklch(0.18 0.01 60)" }}
+      style={{ background: colors.dark }}
     >
       {mode === "sign-in" ? <SignInForm /> : <SignUpForm />}
 
-      <p className="text-muted-foreground text-sm">
+      <p className="text-sm" style={{ color: colors.textMuted }}>
         <span>
           {mode === "sign-in"
             ? "Don't have an account? "
@@ -33,7 +34,8 @@ export default function Auth() {
         </span>
 
         <button
-          className="text-primary cursor-pointer underline-offset-4 hover:underline"
+          className="cursor-pointer underline-offset-4 hover:underline"
+          style={{ color: colors.gold }}
           onClick={() => setMode(mode === "sign-in" ? "sign-up" : "sign-in")}
         >
           {mode === "sign-in" ? "Sign up" : "Sign in"}

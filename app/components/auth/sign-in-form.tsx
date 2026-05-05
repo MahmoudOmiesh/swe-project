@@ -12,6 +12,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { colors } from "@/components/dashboard/theme";
 import {
   Field,
   FieldError,
@@ -64,10 +65,19 @@ export function SignInForm() {
   }
 
   return (
-    <Card className="w-full sm:max-w-md">
+    <Card
+      className="w-full sm:max-w-md"
+      style={{
+        background: colors.cream,
+        border: `1px solid ${colors.border}`,
+        borderRadius: "8px",
+      }}
+    >
       <CardHeader>
-        <CardTitle>Sign In</CardTitle>
-        <CardDescription>Sign in to your account.</CardDescription>
+        <CardTitle style={{ color: colors.dark }}>Sign In</CardTitle>
+        <CardDescription style={{ color: colors.textSub }}>
+          Sign in to your account.
+        </CardDescription>
       </CardHeader>
       <CardContent>
         <form id="sign-in-form" onSubmit={form.handleSubmit(onSubmit)}>
@@ -77,7 +87,12 @@ export function SignInForm() {
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>Email</FieldLabel>
+                  <FieldLabel
+                    htmlFor={field.name}
+                    style={{ color: colors.dark }}
+                  >
+                    Email
+                  </FieldLabel>
                   <Input
                     {...field}
                     id={field.name}
@@ -85,6 +100,10 @@ export function SignInForm() {
                     placeholder="john.doe@example.com"
                     autoComplete="email"
                     type="email"
+                    style={{
+                      borderColor: colors.border2,
+                      color: colors.dark,
+                    }}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -98,7 +117,12 @@ export function SignInForm() {
               control={form.control}
               render={({ field, fieldState }) => (
                 <Field data-invalid={fieldState.invalid}>
-                  <FieldLabel htmlFor={field.name}>Password</FieldLabel>
+                  <FieldLabel
+                    htmlFor={field.name}
+                    style={{ color: colors.dark }}
+                  >
+                    Password
+                  </FieldLabel>
                   <Input
                     {...field}
                     id={field.name}
@@ -106,6 +130,10 @@ export function SignInForm() {
                     placeholder="********"
                     autoComplete="new-password"
                     type="password"
+                    style={{
+                      borderColor: colors.border2,
+                      color: colors.dark,
+                    }}
                   />
                   {fieldState.invalid && (
                     <FieldError errors={[fieldState.error]} />
@@ -117,7 +145,16 @@ export function SignInForm() {
         </form>
       </CardContent>
       <CardFooter className="mt-3">
-        <Button type="submit" form="sign-in-form" className="w-full" size="lg">
+        <Button
+          type="submit"
+          form="sign-in-form"
+          className="w-full"
+          size="lg"
+          style={{
+            background: colors.gold,
+            color: colors.cream,
+          }}
+        >
           Sign In
           {signInMutation.isPending ? (
             <Spinner />
