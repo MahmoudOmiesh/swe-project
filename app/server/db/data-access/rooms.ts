@@ -3,6 +3,19 @@ import { db } from "@/server/db";
 import { rooms } from "@/server/db/schema";
 
 type RoomServiceMode = "cleaning" | "maintenance";
+type RoomType = "single" | "double" | "suite";
+
+/** Create a new room. */
+export async function createRoom(data: {
+  number: string;
+  type: RoomType;
+  floor: number;
+  capacity: number;
+  ratePerNight: number;
+}) {
+  const [row] = await db.insert(rooms).values(data).returning();
+  return row;
+}
 
 /**
  * List all rooms with minimal reservation data —

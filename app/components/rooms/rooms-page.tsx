@@ -10,6 +10,7 @@ import { groupByFloor, countByStatus } from "./mock-data";
 import { RoomCard } from "./room-card";
 import type { RoomListItem } from "./room-card";
 import { RoomDetailPanel } from "./room-detail-panel";
+import { AddRoomModal } from "./add-room-modal";
 
 // ─── Filter pill ──────────────────────────────────────────────────────────────
 
@@ -114,6 +115,7 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
   const [statusFilter, setStatusFilter] = useState<RoomStatus | "all">("all");
   const [floorFilter,  setFloorFilter]  = useState<number | "all">("all");
   const [search,       setSearch]       = useState("");
+  const [isAddRoomOpen, setIsAddRoomOpen] = useState(false);
 
   // Panel state from search params
   const selectedId = searchParams.get("room") ? Number(searchParams.get("room")) : null;
@@ -162,6 +164,14 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
         >
           Rooms
         </h1>
+        <button
+          type="button"
+          onClick={() => setIsAddRoomOpen(true)}
+          className="rounded-full px-4 py-[8px] text-[11px] font-medium"
+          style={{ background: colors.gold, color: "#fff", border: "none" }}
+        >
+          + Add room
+        </button>
       </header>
 
       {/* Body */}
@@ -268,6 +278,11 @@ export function RoomsPage({ basePath }: RoomsPageProps) {
           />
         )}
       </div>
+
+      <AddRoomModal
+        open={isAddRoomOpen}
+        onClose={() => setIsAddRoomOpen(false)}
+      />
     </div>
   );
 }

@@ -4,6 +4,8 @@ import { protectedProcedure, router } from "@/server/api";
 import {
   listRooms,
   getRoomById,
+  getRoomByNumber,
+  createRoom,
   updateRoomServiceMode,
 } from "@/server/db/data-access/rooms";
 
@@ -139,6 +141,37 @@ export const roomsRouter = router({
     .query(async ({ input }) => {
       const row = await getRoomById(input.id);
       return mapRoomDetail(row);
+    }),
+
+  /** Create a new room. */
+  create: protectedProcedure
+    .input(
+      z.object({
+        number: z.string().min(1, "Room number is required").max(16),
+        type: z.enum(["single", "double", "suite"]),
+        floor: z.number().int().min(1, "Floor must be at least 1"),
+        capacity: z.number().int().min(1, "Capacity must be at least 1"),
+        ratePerNight: z.number().int().min(0, "Rate must be at least 0"),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const existing = await getRoomByNumber(input.number);
+      if (existing) {
+        throw new TRPCError({
+          code: "CONFLICT",
+          message: `Room ${input.number} already exists`,
+        });
+      }
+      try {
+        const room = await createRoom(input);
+        return { id: room.id };
+      } catch (err) {
+        throw new TRPCError({
+          code: "BAD_REQUEST",
+          message:
+            err instanceof Error ? err.message : "Failed to create room",
+        });
+      }
     }),
 
   /** Update a room's service mode (cleaning/maintenance) or clear it. */
