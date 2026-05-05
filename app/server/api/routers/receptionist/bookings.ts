@@ -2,6 +2,7 @@ import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { receptionistProcedure, router } from "@/server/api";
 import { calendarDateStringSchema } from "@/lib/calendar-date";
+import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 import {
   listBookings,
   getBookingById,
@@ -213,7 +214,7 @@ export const bookingsRouter = router({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
           nationalityId: z.string().min(1),
-          phone: z.string().min(1),
+          phone: z.string().min(1).refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR),
           address: z.string().optional(),
           dob: z.string().min(1),
         }),
@@ -246,7 +247,7 @@ export const bookingsRouter = router({
           firstName: z.string().min(1),
           lastName: z.string().min(1),
           nationalityId: z.string().min(1),
-          phone: z.string().min(1),
+          phone: z.string().min(1).refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR),
           address: z.string().optional(),
           dob: z.string().min(1),
         }),

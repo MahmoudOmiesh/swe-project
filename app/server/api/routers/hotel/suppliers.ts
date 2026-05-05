@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { TRPCError } from "@trpc/server";
 import { protectedProcedure, router } from "@/server/api";
+import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 import {
   listSuppliers,
   getSupplierById,
@@ -127,7 +128,7 @@ export const suppliersRouter = router({
       z.object({
         name: z.string().min(1),
         category: z.string().min(1),
-        phone: z.string().min(1),
+        phone: z.string().min(1).refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR),
         notes: z.string().optional(),
       }),
     )
@@ -151,7 +152,11 @@ export const suppliersRouter = router({
         id: z.number(),
         name: z.string().min(1).optional(),
         category: z.string().min(1).optional(),
-        phone: z.string().min(1).optional(),
+        phone: z
+          .string()
+          .min(1)
+          .refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR)
+          .optional(),
         notes: z.string().optional(),
       }),
     )

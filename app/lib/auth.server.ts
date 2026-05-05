@@ -16,7 +16,7 @@ baseURL: process.env.BASE_URL || "http://localhost:5173",  database: drizzleAdap
       role: {
         type: "string",
         required: true,
-        defaultValue: "manager",
+        defaultValue: "user",
         input: false,
       },
     },

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { isValidPhoneNumber } from "libphonenumber-js";
+import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 
 
 /** Start of today (local time, midnight). */
@@ -40,10 +40,7 @@ export const newBookingSchema = z.object({
   phone: z
     .string()
     .min(1, "Phone number is required")
-    .refine(
-      (v) => isValidPhoneNumber(v, "EG"),
-      "Enter a valid phone number",
-    ),
+    .refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR),
   address: z.string(),
   dob: z
     .date({ error: "Date of birth is required" })

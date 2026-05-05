@@ -99,6 +99,7 @@ export function Sidebar({ user, role }: SidebarProps) {
                 <Link
                   key={item.href}
                   to={item.href}
+                  prefetch="intent"
                   style={{
                     display: "flex",
                     alignItems: "center",

@@ -6,6 +6,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2 } from "lucide-react";
 import { z } from "zod";
 
+import { EG_PHONE_RE, EG_PHONE_ERROR } from "@/utils/validation/phone";
 import { useTRPC } from "@/utils/trpc/react";
 import { colors } from "@/components/dashboard/theme";
 import { Input } from "@/components/ui/input";
@@ -17,7 +18,10 @@ import { Modal } from "@/components/ui/modal";
 const addSupplierSchema = z.object({
   name: z.string().min(1, "Name is required"),
   category: z.string().min(1, "Category is required"),
-  phone: z.string().min(1, "Phone is required"),
+  phone: z
+    .string()
+    .min(1, "Phone is required")
+    .refine((v) => EG_PHONE_RE.test(v), EG_PHONE_ERROR),
   notes: z.string().optional(),
 });
 
